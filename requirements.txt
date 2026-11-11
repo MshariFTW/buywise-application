@@ -1,0 +1,7 @@
+fastapi==0.162.2
+uvicorn==0.54.0
+psycopg[binary]==3.3.8
+pydantic==2.14.3
+Pillow==13.0.0
+nltk==3.10.4
+httpx==0.28.1

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuyWise | اكتشف السماعات</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f7f6; color: #172925; font: 16px system-ui; }
+    main { max-width: 1000px; margin: auto; padding: 32px 20px; }
+    form { display: flex; flex-wrap: wrap; gap: 8px; }
+    input, button { padding: 10px 14px; border-radius: 8px; font: inherit; }
+    input { flex: 1; min-width: 180px; border: 1px solid #95aaa4; }
+    button { border: 0; background: #17634f; color: white; cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    article { padding: 14px; background: white; border: 1px solid #dce7e2; border-radius: 12px; }
+    img { display: block; width: 100%; height: 150px; object-fit: contain; }
+    h3 { font-size: 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>BuyWise</h1>
+  <p>ابحث عن سماعة، أو اختر منتجًا عشان تشوف بدائل تشبه صورته.</p>
+  <form id="search">
+    <input id="query" aria-label="ابحث عن سماعة" value="headphones" dir="auto" required>
+    <button type="submit">بحث</button>
+  </form>
+  <p>
+    <label for="discover-category">فئة الجلب:</label>
+    <select id="discover-category">
+      <option value="headphones">سماعات</option>
+      <option value="keyboards">كيبوردات</option>
+      <option value="mice">ماوسات</option>
+    </select>
+    <button id="discover-button" type="button">جلب منتجات إضافية</button>
+  </p>
+  <p id="discover-status" role="status"></p>
+  <h2>نتائج البحث</h2>
+  <p id="status" role="status"></p>
+  <div id="results" class="grid"></div>
+
+  <h2 id="similar-status" aria-live="polite"></h2>
+  <div id="similar" class="grid"></div>
+</main>
+
+<script>
+const form = document.querySelector("#search");
+const query = document.querySelector("#query");
+const results = document.querySelector("#results");
+const status = document.querySelector("#status");
+const similar = document.querySelector("#similar");
+const similarStatus = document.querySelector("#similar-status");
+let searchVersion = 0;
+let similarVersion = 0;
+
+async function getJSON(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(response.status);
+  return response.json();
+}
+
+function render(target, products, isSimilar = false) {
+  target.replaceChildren();
+  for (const product of products) {
+    const card = document.createElement("article");
+    if (product.image_url?.startsWith("https://")) {
+      const image = document.createElement("img");
+      image.src = product.image_url;
+      image.alt = "";
+      card.append(image);
+    }
+    const title = document.createElement("h3");
+    title.dir = "auto";
+    title.textContent = product.title;
+    card.append(title);
+
+    if (isSimilar) {
+      const score = document.createElement("p");
+      score.textContent = `درجة التشابه: ${product.similarity.toFixed(4)}`;
+      card.append(score);
+    } else {
+      const button = document.createElement("button");
+      button.textContent = "بدائل مشابهة";
+      button.addEventListener("click", () => showSimilar(product));
+      card.append(button);
+    }
+    addOffers(card, product);
+    target.append(card);
+  }
+}
+
+async function showSimilar(product) {
+  const version = ++similarVersion;
+  similar.replaceChildren();
+  similarStatus.textContent = "جاري جلب البدائل...";
+  try {
+    const items = await getJSON(`/products/${product.id}/similar`);
+    if (version !== similarVersion) return;
+    render(similar, items, true);
+    similarStatus.textContent = items.length
+      ? `بدائل لـ ${product.title}`
+      : "ما فيه بدائل لهذا المنتج.";
+  } catch {
+    if (version === similarVersion) {
+      similarStatus.textContent = "تعذّر جلب البدائل لهذا المنتج.";
+    }
+  }
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const version = ++searchVersion;
+  ++similarVersion;
+  results.replaceChildren();
+  similar.replaceChildren();
+  similarStatus.textContent = "";
+  status.textContent = "جاري البحث...";
+  try {
+    const items = await getJSON("/search?q=" + encodeURIComponent(query.value.trim()));
+    if (version !== searchVersion) return;
+    render(results, items);
+    status.textContent = items.length ? "" : "ما فيه نتائج.";
+  } catch {
+    if (version === searchVersion) status.textContent = "تعذّر البحث.";
+  }
+});
+function addOffers(card, product) {
+  const details = document.createElement("details");
+  const summary = document.createElement("summary");
+  summary.textContent = "عروض المتاجر";
+
+  const content = document.createElement("div");
+  details.append(summary, content);
+  card.append(details);
+
+  let loaded = false;
+  let loading = false;
+
+  details.addEventListener("toggle", async () => {
+    if (!details.open || loaded || loading) return;
+
+    loading = true;
+    content.textContent = "جاري جلب العروض...";
+
+    try {
+      const offers = await getJSON(`/products/${product.id}/offers`);
+      content.replaceChildren();
+
+      if (!offers.length) {
+        content.textContent = "لا توجد عروض محفوظة لهذا المنتج بعد.";
+      }
+
+      for (const offer of offers) {
+        const box = document.createElement("div");
+
+        const store = document.createElement("h4");
+        store.textContent = offer.store;
+
+        const price = document.createElement("p");
+        price.textContent = offer.price === null
+          ? "لا يوجد سعر محفوظ."
+          : `آخر سعر محفوظ: ${offer.price} ${offer.currency}`;
+
+        box.append(store, price);
+
+        if (offer.observed_at) {
+          const time = document.createElement("p");
+          time.textContent = "وقت القراءة: " +
+            new Date(offer.observed_at).toLocaleString("ar-SA", {
+              timeZone: "Asia/Riyadh",
+              calendar: "gregory",
+            });
+          box.append(time);
+        }
+
+        if (/^https?:\/\//i.test(offer.url)) {
+          const link = document.createElement("a");
+          link.href = offer.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "فتح صفحة المتجر";
+          box.append(link);
+        }
+
+        content.append(box);
+      }
+
+      loaded = true;
+    } catch {
+      content.textContent =
+        "تعذّر جلب العروض. أغلق القائمة وافتحها للمحاولة مجددًا.";
+    } finally {
+      loading = false;
+    }
+  });
+}
+const discoverButton = document.querySelector("#discover-button");
+const discoverCategory = document.querySelector("#discover-category");
+const discoverStatus = document.querySelector("#discover-status");
+
+discoverButton.addEventListener("click", async () => {
+  const text = query.value.trim();
+  if (text.length < 2 || text.length > 120) {
+    discoverStatus.textContent = "اكتب عبارة بحث بين حرفين و120 حرفًا.";
+    return;
+  }
+
+  const params = "q=" + encodeURIComponent(text)
+    + "&category=" + encodeURIComponent(discoverCategory.value);
+
+  discoverButton.disabled = true;
+  discoverStatus.textContent = "جاري جلب المنتجات...";
+
+  try {
+    const response = await fetch("/discover?" + params, {method: "POST"});
+    const data = await response.json();
+
+    if (!response.ok) {
+      discoverStatus.textContent = typeof data.detail === "string"
+        ? data.detail
+        : "تعذّر جلب المنتجات.";
+      return;
+    }
+
+    discoverStatus.textContent = `دفعة «${text}»: ${data.count} منتجًا.`;
+    if (query.value.trim() === text) form.requestSubmit();
+  } catch {
+    discoverStatus.textContent = "تعذّر جلب المنتجات.";
+  } finally {
+    discoverButton.disabled = false;
+  }
+});
+form.requestSubmit();
+</script>
+</body>
+</html>
