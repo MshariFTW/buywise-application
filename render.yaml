@@ -10,8 +10,6 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
-      - key: SERPAPI_KEY
-        sync: false
       - key: BUYWISE_SERP_DAILY
         value: "15"
       - key: BUYWISE_SERP_MONTHLY
