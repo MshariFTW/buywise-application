@@ -8,3 +8,7 @@ __pycache__/
 buywise_offer.json
 buywise_asas_test.json
 BuyWise_submission*.zip
+
+BuyWise_judgments*.json
+BuyWise_IR_results*.md
+*.zip

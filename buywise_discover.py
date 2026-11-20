@@ -1,20 +1,17 @@
 import argparse
+import os
 import re
 from getpass import getpass
 
-import psycopg
+from buywise_db import connect_db, password_prompt
+from buywise_retrieval import dimensions
 
 from buywise_probe import request
 
 
-def connect_db(password):
-    return psycopg.connect(
-        host="localhost", port=5432, dbname="buywise",
-        user="postgres", password=password,
-    )
-
-
-def discover_products(query, category, password, api_key=None):
+def discover_products(query, category, password, api_key=None, *, before_search=None):
+    if category != "rugs":
+        raise ValueError("Select the rugs category.")
     query_key = " ".join(query.lower().split())
     if not 2 <= len(query_key) <= 120:
         raise ValueError("Write a search query between 2 and 120 characters.")
@@ -43,14 +40,26 @@ def discover_products(query, category, password, api_key=None):
                 (cached[0],),
             ).fetchall()
 
-    key = getpass("SerpApi key: ").strip() if api_key is None else api_key
+    key = (
+        (os.getenv("SERPAPI_KEY") or getpass("SerpApi key: ").strip())
+        if api_key is None
+        else api_key
+    )
 
     if not key:
         raise ValueError(
             "هذا البحث غير محفوظ. أعد تشغيل السيرفر وأدخل مفتاح SerpApi للجلب."
         )
+    if before_search is not None:
+        before_search()
     data = request(
-        key, engine="google_shopping", q=query_key, gl="sa", hl="en"
+        key,
+        engine="google_shopping",
+        q=query_key
+        if re.search(r"\b(rugs?|carpets?)\b", query_key)
+        else query_key + " rug",
+        gl="sa",
+        hl="en",
     )
 
     products = {}
@@ -60,6 +69,14 @@ def discover_products(query, category, password, api_key=None):
             title = result.get("title") or ""
             image_url = result.get("thumbnail") or ""
 
+            if not re.search(r"\b(rugs?|carpets?)\b|سجاد", title, re.I):
+                continue
+            if re.search(
+                r"\b(?:rug pads?|carpet tape|cleaner|shampoo|underlay|gripper|rug grippers?)\b",
+                title,
+                re.I,
+            ):
+                continue
             if not source_id or not title or not image_url.startswith("https://"):
                 continue
             if re.search(
@@ -73,13 +90,15 @@ def discover_products(query, category, password, api_key=None):
             row = conn.execute(
                 """
                 INSERT INTO products
-                    (model_key, title, image_url, category, discovery_token)
-                VALUES (%s, %s, %s, %s, %s)
+                    (model_key, title, image_url, category, discovery_token, size_label)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (model_key) DO UPDATE
-                SET discovery_token = COALESCE(
+                SET image_url=EXCLUDED.image_url,
+                    discovery_token = COALESCE(
                     EXCLUDED.discovery_token, products.discovery_token
                 )
-                WHERE products.category = EXCLUDED.category
+                WHERE products.category = EXCLUDED.category AND products.title=EXCLUDED.title
+                  AND products.size_label IS NOT DISTINCT FROM EXCLUDED.size_label
                 RETURNING id, title
                 """,
                 (
@@ -88,6 +107,7 @@ def discover_products(query, category, password, api_key=None):
                     image_url,
                     category,
                     result.get("immersive_product_page_token"),
+                    dimensions(title),
                 ),
             ).fetchone()
 
@@ -113,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("category")
     args = parser.parse_args()
 
-    password = getpass("PostgreSQL password: ")
+    password = password_prompt()
     rows = discover_products(args.query, args.category, password)
 
     print(f"\nProducts in this batch: {len(rows)}")

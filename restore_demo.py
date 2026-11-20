@@ -1,121 +1,109 @@
+"""Import the portable rug catalog into a new or existing local BuyWise database."""
 
-"""Restore the BuyWise demo into an empty local catalog."""
-from datetime import datetime
-from decimal import Decimal
-from getpass import getpass
 import json
+import math
+from decimal import Decimal
 from pathlib import Path
+from buywise_db import connect_db, create_database, migrate, password_prompt
+from buywise_retrieval import MODEL, REVISION
+from buywise_image_index import approved_image
 
-import psycopg
-
-
-SCHEMA = (
-    """
-    CREATE TABLE IF NOT EXISTS product_categories (
-        category_key TEXT PRIMARY KEY, name TEXT NOT NULL
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS products (
-        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-        model_key TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        image_url TEXT,
-        category TEXT REFERENCES product_categories(category_key),
-        discovery_token TEXT
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS offers (
-        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-        product_id BIGINT NOT NULL REFERENCES products(id),
-        store TEXT NOT NULL, seller TEXT NOT NULL, listing_key TEXT NOT NULL,
-        url TEXT NOT NULL, page_token TEXT NOT NULL, currency TEXT NOT NULL,
-        advertised_title TEXT,
-        UNIQUE (store, seller, listing_key, currency)
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS price_observations (
-        offer_id BIGINT NOT NULL REFERENCES offers(id),
-        observed_at TIMESTAMPTZ NOT NULL,
-        price NUMERIC(12, 2) NOT NULL CHECK (price > 0),
-        PRIMARY KEY (offer_id, observed_at)
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS product_image_embeddings (
-        product_id BIGINT PRIMARY KEY REFERENCES products(id),
-        model_name TEXT NOT NULL, source_url TEXT NOT NULL,
-        embedding DOUBLE PRECISION[] NOT NULL CHECK (cardinality(embedding) = 512)
-    )
-    """,
-    """
-    CREATE TABLE IF NOT EXISTS discovery_cache (
-        query_key TEXT NOT NULL,
-        category TEXT NOT NULL REFERENCES product_categories(category_key),
-        checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        product_ids BIGINT[] NOT NULL,
-        PRIMARY KEY (query_key, category)
-    )
-    """,
-)
+SNAPSHOT = Path(__file__).with_name("rug_catalog.json")
 
 
-def restore(snapshot, password):
-    settings = {"host": "localhost", "port": 5432, "user": "postgres", "password": password}
-    with psycopg.connect(**settings, dbname="postgres", autocommit=True) as admin:
-        if admin.execute("SELECT 1 FROM pg_database WHERE datname = 'buywise'").fetchone() is None:
-            admin.execute("CREATE DATABASE buywise")
-
-    with psycopg.connect(**settings, dbname="buywise") as conn:
-        exists = conn.execute("SELECT to_regclass('public.products')").fetchone()[0]
-        if exists and conn.execute("SELECT EXISTS (SELECT 1 FROM products)").fetchone()[0]:
-            return False
-
-        for statement in SCHEMA:
-            conn.execute(statement)
-        with conn.cursor() as cursor:
-            cursor.executemany(
-                "INSERT INTO product_categories (category_key, name) VALUES (%s, %s) "
-                "ON CONFLICT (category_key) DO NOTHING", snapshot["categories"],
-            )
-            cursor.executemany(
-                "INSERT INTO products (id, model_key, title, image_url, category) "
-                "OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s, %s)", snapshot["products"],
-            )
-            cursor.executemany(
-                "INSERT INTO product_image_embeddings (product_id, model_name, source_url, embedding) "
-                "VALUES (%s, %s, %s, %s)", snapshot["embeddings"],
-            )
-            cursor.executemany(
-                "INSERT INTO offers (id, product_id, store, seller, currency, url, advertised_title, "
-                "listing_key, page_token) OVERRIDING SYSTEM VALUE VALUES (%s, %s, %s, %s, %s, %s, %s, %s, '')",
-                [(*row, "demo:" + str(row[0])) for row in snapshot["offers"]],
-            )
-            cursor.executemany(
-                "INSERT INTO price_observations (offer_id, observed_at, price) VALUES (%s, %s, %s)",
-                [(offer, datetime.fromisoformat(at), Decimal(price))
-                 for offer, at, price in snapshot["history"]],
-            )
-
-        for table in ("products", "offers"):
-            conn.execute(
-                "SELECT setval(pg_get_serial_sequence(%s, 'id'), COALESCE(MAX(id), 1), "
-                f"MAX(id) IS NOT NULL) FROM {table}", (table,),
-            )
-    return True
-
-
-def main():
-    snapshot = json.loads(Path(__file__).with_name("demo_catalog.json").read_text(encoding="utf-8"))
-    if snapshot.get("format") != 1:
-        raise SystemExit("Unsupported demo catalog format.")
-    if restore(snapshot, getpass("PostgreSQL password: ")):
-        print("Restored", len(snapshot["products"]), "demo products.")
-    else:
-        print("The existing catalog already has products. No demo data was written.")
+def restore(snapshot, password, *, create=True):
+    if snapshot.get("format") != 2:
+        raise ValueError("Expected a version 2 rug snapshot")
+    if create:
+        create_database(password)
+    with connect_db(password) as conn:
+        migrate(conn)
+        for item in snapshot["rugs"]:
+            if not approved_image(item["image_url"]):
+                raise ValueError("Unsupported catalog image")
+            row = conn.execute(
+                """
+                INSERT INTO products (model_key,title,image_url,category,design_key,size_label)
+                VALUES (%s,%s,%s,'rugs',%s,%s)
+                ON CONFLICT (model_key) DO NOTHING RETURNING id
+            """,
+                (
+                    item["key"],
+                    item["title"],
+                    item["image_url"],
+                    item["design"],
+                    item["size"],
+                ),
+            ).fetchone()
+            if not row:
+                row = conn.execute(
+                    "SELECT id FROM products WHERE model_key=%s AND category='rugs' AND image_url=%s AND title=%s",
+                    (item["key"], item["image_url"], item["title"]),
+                ).fetchone()
+            if not row:
+                continue
+            pid = row[0]
+            emb = item.get("embedding")
+            if emb:
+                vector = emb["vector"]
+                if (
+                    emb["model"] != MODEL
+                    or emb["revision"] != REVISION
+                    or len(vector) != 512
+                    or not all(math.isfinite(x) for x in vector)
+                    or not math.hypot(*vector)
+                ):
+                    raise ValueError("Invalid catalog embedding")
+                conn.execute(
+                    """
+                    INSERT INTO product_image_embeddings(product_id,model_name,model_revision,source_url,image_sha256,embedding)
+                    VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (product_id) DO NOTHING
+                """,
+                    (
+                        pid,
+                        MODEL,
+                        REVISION,
+                        item["image_url"],
+                        emb["image_sha256"],
+                        vector,
+                    ),
+                )
+            for offer in item["offers"]:
+                if offer["currency"] != "SAR":
+                    raise ValueError("Expected a SAR offer")
+                fields = (offer["store"], offer["seller"], offer["listing"], "SAR")
+                conn.execute(
+                    """
+                    INSERT INTO offers(product_id,store,seller,listing_key,currency,url,page_token,advertised_title,size_label,color_label)
+                    VALUES (%s,%s,%s,%s,%s,%s,'',%s,%s,%s) ON CONFLICT DO NOTHING
+                """,
+                    (
+                        pid,
+                        *fields,
+                        offer["url"],
+                        offer["title"],
+                        offer["size"],
+                        offer["color"],
+                    ),
+                )
+                row = conn.execute(
+                    """SELECT id FROM offers WHERE product_id=%s AND store=%s AND seller=%s
+                    AND listing_key=%s AND currency=%s AND size_label IS NOT DISTINCT FROM %s
+                    AND color_label IS NOT DISTINCT FROM %s AND advertised_title IS NOT DISTINCT FROM %s""",
+                    (pid, *fields, offer["size"], offer["color"], offer["title"]),
+                ).fetchone()
+                if row:
+                    for at, price in offer["history"]:
+                        conn.execute(
+                            "INSERT INTO price_observations(offer_id,observed_at,price) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+                            (row[0], at, Decimal(price)),
+                        )
+    return len(snapshot["rugs"])
 
 
 if __name__ == "__main__":
-    main()
+    print(
+        "Processed",
+        restore(json.loads(SNAPSHOT.read_text(encoding="utf-8")), password_prompt()),
+        "rug records.",
+    )

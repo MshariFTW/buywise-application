@@ -1,237 +1,996 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BuyWise | اكتشف السماعات</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #f4f7f6; color: #172925; font: 16px system-ui; }
-    main { max-width: 1000px; margin: auto; padding: 32px 20px; }
-    form { display: flex; flex-wrap: wrap; gap: 8px; }
-    input, button { padding: 10px 14px; border-radius: 8px; font: inherit; }
-    input { flex: 1; min-width: 180px; border: 1px solid #95aaa4; }
-    button { border: 0; background: #17634f; color: white; cursor: pointer; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-    article { padding: 14px; background: white; border: 1px solid #dce7e2; border-radius: 12px; }
-    img { display: block; width: 100%; height: 150px; object-fit: contain; }
-    h3 { font-size: 16px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BuyWise</title>
+<style>
+:root{color-scheme:light;--ink:#152929;--muted:#556e69;--line:#dbe6e3;--bg:#f5f3ed;--white:#fff;--primary:#12624e;--soft:#e7f3ed;--amber:#fff0d9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,"Segoe UI",Arial,sans-serif}
+main{width:min(1160px,100%);margin:auto;padding:24px 24px 56px}
+header{background:linear-gradient(122deg,#293c35,#505b43);color:#fff;border-radius:24px;padding:27px 30px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;justify-content:space-between}
+.brand{font-size:34px;font-weight:760;letter-spacing:-.04em;line-height:1.1;direction:ltr;text-align:right}
+header p{margin:.5em 0 0;color:#d7ede3}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;background:var(--white);border:1px solid #c3d7cf;border-radius:10px;padding:8px 12px;color:var(--primary);font-weight:650}
+button:hover{background:var(--soft)}
+button:disabled{opacity:.55;cursor:wait}
+button.primary,nav button[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:white}
+nav button[aria-pressed="true"]{background:#bce7d5;color:#123e34;border-color:#bce7d5}
+nav button{border-color:#a6c9bc}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+input,select,textarea{max-width:100%;background:white;border:1px solid #c3d7cf;color:var(--ink);border-radius:10px;padding:8px 11px}
+:focus-visible{outline:3px solid #369f87;outline-offset:3px}
+.panel{margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}
+.toolbar,.actions,.search-row,.budget-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-row input{flex:1;min-width:160px}
+.toolbar{margin-top:12px}
+h1,h2,h3,h4,p{margin:0}
+h2{font-size:22px}
+h3{font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+h4{font-size:15px}
+.hint,.status,.small{color:var(--muted);font-size:13px}
+.status:empty{display:none}
+.status{padding:6px 0}
+.section-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin:17px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}
+.card{padding:14px;background:#fff;border:1px solid var(--line);border-radius:15px;display:grid;align-content:start;gap:10px;min-width:0}
+.image{height:185px;border-radius:12px;background:#f7faf8;display:grid;place-items:center;overflow:hidden}
+.image img{width:100%;height:185px;object-fit:contain;mix-blend-mode:multiply}
+.placeholder{color:var(--muted)}
+.badge{display:inline-flex;align-items:center;border-radius:999px;background:var(--soft);color:#164d40;font-size:12px;padding:3px 9px;max-width:max-content}
+.score{font-size:13px;color:var(--muted)}
+.cards-title{display:grid;gap:5px}
+.card .actions button{font-size:13px;padding:5px 9px}
+.summary{padding:12px;background:var(--soft);border-radius:12px}
+.saved-fields{display:grid;gap:8px}
+.saved-fields label{display:grid;gap:3px;font-size:13px}
+textarea{resize:vertical;min-height:65px}
+.offer{padding:12px;border:1px solid var(--line);border-radius:12px;display:grid;gap:5px}
+.offer+.offer{margin-top:7px}
+.price{color:var(--primary);font-weight:750}
+.budget-row input{width:125px}
+#budget-status{margin-top:5px}
+a{color:var(--primary)}
+.history{display:grid;gap:4px;padding:6px 0}
+.history p{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.notice{background:var(--amber);padding:9px 12px;border-radius:9px;margin:8px 0}
+.compare-pick[aria-pressed="true"]{background:var(--soft);border-color:var(--primary)}
+.table-scroll{overflow-x:auto}
+.compare-table{width:100%;border-collapse:collapse;text-align:start}
+.compare-table th,.compare-table td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top;overflow-wrap:anywhere}
+.compare-table th[scope="row"]{min-width:120px;color:var(--muted);font-size:13px}
+.compare-table thead th{min-width:150px;background:#f7faf8}
+.compare-table .best{background:var(--soft);color:var(--primary);font-weight:700}
+[hidden]{display:none!important}
+@media(max-width:520px){main{padding:10px}header{padding:20px;border-radius:15px}.panel{padding:12px}.grid{grid-template-columns:1fr}.brand{font-size:29px}}
+
+:root{--bg:#f6f3ec;--ink:#252c26;--muted:#595f54;--primary:#234d3f;--line:#dcdacf;--soft:#eaf0e7;--amber:#f3e4d3}
+body{font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+main{width:min(1240px,100%);padding:0 clamp(16px,4vw,54px) 32px}
+header{background:transparent;color:var(--ink);border-radius:0;border-bottom:1px solid var(--line);padding:20px 0;gap:20px}
+.brand{font-family:Georgia,serif;font-size:34px;font-weight:700;letter-spacing:-.06em}
+.brand span{color:#a35a39}
+header nav{margin-inline-end:auto;gap:4px}
+header nav button{border-color:transparent;color:var(--muted);background:transparent;border-radius:24px}
+header nav button[aria-pressed="true"]{background:#e5eadf;color:var(--primary);border-color:transparent}
+#language{font-size:14px;background:transparent;border-radius:22px;min-width:78px}
+.catalog-intro{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);margin:24px 0 22px;background:#254438;color:#fff;overflow:hidden;border-radius:16px}
+.catalog-tools{padding:clamp(20px,3.3vw,43px);align-self:center}
+.catalog-tools h2{font:normal clamp(32px,4.5vw,58px)/1.1 Georgia,serif;letter-spacing:-.04em}
+html[dir="rtl"] .catalog-tools h2{font-family:inherit;letter-spacing:0;font-size:clamp(30px,4vw,48px)}
+.modes{display:flex;gap:16px;margin:15px 0 20px;border-bottom:1px solid #718373}
+.modes button{background:transparent;color:#dbe5db;border:0;border-bottom:2px solid transparent;border-radius:0;padding:6px 0;font-weight:500}
+.modes button[aria-pressed="true"]{color:white;border-bottom-color:#dfb788;font-weight:700}
+.catalog-tools .search-row{flex-wrap:nowrap;background:#fff;border-radius:9px;padding:4px}
+.catalog-tools .search-row input{border:0;min-width:0;width:100%;background:transparent}
+.catalog-tools button.primary{background:#c07850;border:0;color:#151811;padding-inline:18px}
+.online{background:transparent;border:0;border-bottom:1px solid #b6c6b6;color:#fff;border-radius:0;padding:2px 0;font-size:13px;margin-top:10px}
+.online:hover,.modes button:hover{background:#365849}
+.catalog-tools .status,.catalog-tools #pattern-instruction{color:#e4ebe2}
+.hero-photo{position:relative;min-height:210px;background:#c9b39b;overflow:hidden}
+.hero-photo img{width:100%;height:100%;position:absolute;object-fit:cover;object-position:center;transform:scale(1.16)}
+.patterns{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:24px}
+.pattern-tile{padding:5px 5px 8px;border:1px solid var(--line);display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:5px;border-radius:10px;text-align:start;background:#fff;color:var(--ink)}
+.pattern-tile img{display:block;width:100%;height:70px;object-fit:cover;border-radius:6px;grid-column:1/-1}
+.pattern-tile span{padding-inline-start:3px;line-height:1.2}.pattern-tile small{color:var(--muted);padding-inline-end:3px}
+.pattern-tile[aria-pressed="true"]{border:2px solid var(--primary);padding:4px 4px 7px;background:#e9efe6}
+.section-head h2{font:normal clamp(24px,3vw,32px)/1.2 Georgia,serif}
+html[dir="rtl"] .section-head h2{font-family:inherit}
+.grid{gap:15px;grid-template-columns:repeat(auto-fill,minmax(min(100%,225px),1fr))}
+.card{border-radius:12px;padding:12px;gap:8px;grid-template-rows:auto;box-shadow:0 1px 1px #34342608}
+.image,.image img{height:192px;background:#f2f0e9}
+.card .summary{padding:0;background:none;color:var(--primary);font-weight:650}
+.card .actions{padding-top:3px}
+#retailers-view{max-width:720px}
+#retailers-view p{margin-top:12px}
+#detail-action:not(:empty){margin-block:10px}
+@media(max-width:650px){
+ header{padding:14px 0;gap:6px}.brand{font-size:27px}nav button,#language{font-size:13px;padding:6px 8px}#language{min-width:0}
+ .catalog-intro{grid-template-columns:minmax(0,1fr);margin-top:15px}.hero-photo{display:none}
+ .patterns{grid-template-columns:repeat(3,minmax(0,1fr))}.pattern-tile{font-size:13px}
+ .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr))}.image,.image img{height:160px}
+}
+html{scrollbar-gutter:stable}
+html:has(#detail[open]){overflow:hidden}
+#retailers-view{max-width:none;margin:clamp(20px,4vw,48px) 0}
+.retailer-spread{display:grid;grid-template-columns:1fr 1.08fr;border:1px solid #d8d2c5;overflow:hidden;border-radius:22px;background:#fffefa;box-shadow:0 12px 40px #392f1f0d}
+.retailer-story{display:flex;flex-direction:column;background:#243e32;color:#fffaf0;min-width:0}
+.retailer-cover{flex:1;min-height:210px;position:relative;background:#8a6c55}
+.retailer-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 49%}
+.retailer-intro,#retailer-form{padding:clamp(24px,4vw,54px)}
+.retailer-intro h2,#retailer-form h3{font:normal clamp(32px,3.9vw,55px)/1.05 Georgia,serif;letter-spacing:-.045em;max-width:15ch}
+.retailer-intro p{max-width:38ch;color:#e3e8da;font-size:16px}
+#merchant-contact{border-block-start:1px solid #819284;margin-block-start:25px;padding-block-start:16px}
+#merchant-contact>span{color:#d0dbcf;font-size:13px}
+.address-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:5px}
+#merchant-address{font-size:clamp(15px,1.55vw,21px);font-weight:600;user-select:all}
+#copy-email{color:#fff;background:transparent;border-color:#91a799;padding:4px 10px}
+#retailer-form{display:grid;align-content:center;min-width:0}
+#retailer-form h3{font-size:clamp(28px,3.4vw,44px);max-width:none;color:#2a3c2b}
+#retailer-form .form-intro{color:#596357;line-height:1.55;margin:8px 0 10px}
+#retailer-form label{margin:14px 0 5px;font-weight:650;color:#344638}
+#retailer-form :is(input:not([type=hidden]),textarea){border:1px solid #bfc5b8;background:#fbfaf6;border-radius:8px;width:100%;padding:10px 13px}
+#retailer-form small,#request-status{color:#535e50}
+.request-actions{display:flex;flex-wrap:wrap;gap:8px;margin-block-start:22px}
+.request-actions button{min-height:44px}
+#request-status:empty,#copy-status:empty{display:none}
+#detail{position:fixed;inset:0;width:min(1080px,calc(100vw - 36px));max-width:none;max-height:86dvh;margin:auto;overscroll-behavior:contain;padding:0 clamp(16px,3vw,32px) 24px;color:var(--ink);background:#fbfaf6;border-radius:20px;box-shadow:0 24px 90px #141f2444}
+#detail::backdrop{background:#15251bc4;backdrop-filter:blur(3px)}
+#detail .section-head{position:sticky;top:0;z-index:1;background:#fbfaf6;border-bottom:1px solid var(--line);margin:0;padding:16px 0 12px;flex-wrap:nowrap}
+#detail-reference{width:46px;height:54px;object-fit:contain;border-radius:6px;background:#f1ede4}
+#detail-title{flex:1}
+#close-detail{border:1px solid #c8cbbb;border-radius:24px;flex:none}
+#detail-status{font-size:15px}
+.card{display:flex;flex-direction:column;background:#fffefa;border-color:#dbd6c9;gap:8px}
+.card .image,.card .image img{height:clamp(180px,17vw,230px);background:#f0ece2}
+.card .image{border:1px solid #e7e2d7}
+.card .actions{margin-top:auto;padding-top:8px}
+.card .actions button{min-height:34px}
+.catalog-intro{border-radius:20px;background:#243e32}
+.hero-photo{min-height:265px}
+html[dir=rtl] :is(.retailer-intro h2,#retailer-form h3){font-family:inherit;letter-spacing:0;line-height:1.35;max-width:none}
+@media(max-width:760px){
+.retailer-spread{grid-template-columns:1fr}.retailer-cover{min-height:160px}.retailer-intro,#retailer-form{padding:24px}.retailer-intro h2{max-width:none}
+#merchant-contact{margin-top:16px}.retailer-intro p{max-width:none}#detail{width:calc(100vw - 16px);max-height:90dvh}
+}
+
+.textile-display{isolation:isolate;background:radial-gradient(ellipse at top left,#ede0cd,#b8a58e);min-height:260px}
+.textile-display img{width:32%;height:84%;top:8%;object-fit:cover;box-shadow:3px 7px 12px #36271743;border:3px solid #eee5d6;transform-origin:center;object-position:center}
+.textile-display img:nth-child(1){left:9%;transform:rotate(-10deg)}
+.textile-display img:nth-child(2){left:34%;top:5%;transform:rotate(1deg)}
+.textile-display img:nth-child(3){left:59%;top:11%;transform:rotate(9deg)}
+@media(max-width:650px){.textile-display{display:block;min-height:114px}.textile-display img{width:28%;height:180%;top:-40%}.textile-display img:nth-child(2){top:-36%}.textile-display img:nth-child(3){top:-32%}}
+</style>
 </head>
 <body>
+<aside id="local-file" class="panel" hidden></aside>
 <main>
-  <h1>BuyWise</h1>
-  <p>ابحث عن سماعة، أو اختر منتجًا عشان تشوف بدائل تشبه صورته.</p>
-  <form id="search">
-    <input id="query" aria-label="ابحث عن سماعة" value="headphones" dir="auto" required>
-    <button type="submit">بحث</button>
-  </form>
-  <p>
-    <label for="discover-category">فئة الجلب:</label>
-    <select id="discover-category">
-      <option value="headphones">سماعات</option>
-      <option value="keyboards">كيبوردات</option>
-      <option value="mice">ماوسات</option>
-    </select>
-    <button id="discover-button" type="button">جلب منتجات إضافية</button>
-  </p>
-  <p id="discover-status" role="status"></p>
-  <h2>نتائج البحث</h2>
-  <p id="status" role="status"></p>
-  <div id="results" class="grid"></div>
+  <header>
+    <h1 class="brand">BuyWise<span aria-hidden="true">.</span></h1>
+    <nav aria-label="Main navigation" data-ar-label="التنقل الرئيسي">
+      <button type="button" id="search-tab" aria-pressed="true" data-ar="كتالوج السجاد">Rug catalog</button>
+      <button type="button" id="list-tab" aria-pressed="false" data-ar="قائمة مشترياتي">My shortlist</button>
+      <button type="button" id="retailers-tab" aria-pressed="false" aria-controls="retailers-view" data-ar="للتجار">For retailers</button>
+    </nav>
+    <button type="button" id="language" lang="ar">العربية</button>
+  </header>
 
-  <h2 id="similar-status" aria-live="polite"></h2>
-  <div id="similar" class="grid"></div>
+  <section id="search-view">
+    <section class="catalog-intro">
+      <div class="catalog-tools">
+        <h2 data-ar="ابحث عن سجادتك">Find your rug</h2>
+        <div class="modes" role="group" aria-label="Browse options" data-ar-label="طرق التصفح">
+          <button id="keyword-mode" type="button" aria-pressed="true" data-ar="بحث بالكلمات">Keyword search</button>
+          <button id="pattern-mode" type="button" aria-pressed="false" data-ar="تصفّح النقوش">Browse by pattern</button>
+        </div>
+        <div id="keywords">
+          <form id="search-form" class="search-row">
+            <input id="q" aria-label="Search rugs" data-ar-label="البحث عن سجاد" placeholder="Try a rug name or retailer" data-ar-placeholder="اكتب اسم سجادة أو متجر" dir="auto" maxlength="120">
+            <button type="submit" class="primary" data-ar="بحث">Search</button>
+          </form>
+          <button id="discover" type="button" class="online" data-ar="بحث عبر الإنترنت">Search online</button>
+          <p id="discover-status" class="status" role="status"></p>
+        </div>
+        <p id="pattern-instruction" hidden data-ar="اختر نقشة لاستعراض سجاد يحملها.">Choose a pattern to see matching rugs.</p>
+      </div>
+      <div class="hero-photo textile-display" aria-hidden="true"><img alt="" src="/photo?url=https%3A%2F%2Fcdn.abyat.com%2Fproducts%2F530198%2F530198_PI_1.png%2Ffit-in%2F683x683"><img alt="" src="/photo?url=https%3A%2F%2Fapi.cb2.ae%2Fmedias%2F588754-CB2MarloweGoldHdkndRug8X10SSF22-convert-1920x1280%3Fcontext%3DbWFzdGVyfGF6dXJlaW1hZ2VzfDQwMTM0MXxpbWFnZS9qcGVnfGFHTXhMMmcxTXk4NU5qY3hNREEwTVRJM01qWXlMelU0T0RjMU5GOURRakpOWVhKc2IzZGxSMjlzWkVoa2EyNWtVblZuT0ZneE1GTlRSakl5WDJOdmJuWmxjblF0TVRreU1IZ3hNamd3fDJhMjI2NWZkNzk1NDllYmJlNWUyNGQ1NjNiNGM2YzVlMTU2ZWIzZDhhNzcxZjNjNTUxY2QwODFlNjc3MWQxMDU"><img alt="" src="/photo?url=https%3A%2F%2Fimg.zid.store%2Fimg%2Ffit%3Dscale-down%2Cwidth%3D1000%2Cheight%3D1000%2Fhttps%3A%2F%2Fmedia.zid.store%2Fa2de7f70-0ac2-4ad0-9d88-3809cd1cc969%2F8b2ddb3c-9d3f-436e-8a66-251314885dcc.jpgv1762151633"></div>
+    </section>
+    <div id="patterns" class="patterns" hidden></div>
+    <div class="section-head"><h2 id="results-title" data-ar="كتالوج السجاد">Rug catalog</h2><p id="search-status" class="status" role="status"></p></div>
+    <div id="results" class="grid"></div>
+  </section>
+
+  <section id="list-view" hidden>
+    <section class="panel">
+      <div class="budget-row">
+        <label for="budget" data-ar="ميزانية القائمة:">Shortlist budget</label>
+        <input id="budget" type="number" min="0" step="0.01" placeholder="e.g. 300" data-ar-placeholder="مثال: 300" dir="ltr">
+        <span data-ar="ر.س">SAR</span>
+      </div>
+      <p id="budget-status" class="status" role="status"></p>
+    </section>
+    <div class="section-head"><h2 data-ar="قائمة مشترياتي">My shortlist</h2><p id="list-status" class="status" role="status"></p></div>
+    <div class="toolbar">
+      <button type="button" id="compare-button" class="primary" aria-controls="comparison" aria-expanded="false" disabled data-ar="قارن المنتجات المحددة">Compare selected rugs</button>
+      <span id="compare-status" class="status" role="status" data-ar="اختر منتجين أو ثلاثة من قائمتك.">Choose two or three rugs to compare.</span>
+    </div>
+    <section id="comparison" class="panel" aria-labelledby="comparison-title" hidden>
+      <div class="section-head"><h3 id="comparison-title" data-ar="مقارنة المنتجات">Compare rugs</h3><button type="button" id="close-comparison" class="ghost" data-ar="إغلاق المقارنة">Close comparison</button></div>
+      <p class="hint" data-ar="المقارنة تستخدم آخر الأسعار المحفوظة لكل متجر.">Prices reflect the latest saved observation from each retailer.</p>
+      <div id="compare-content" class="table-scroll" tabindex="0" role="region" aria-label="Product comparison" data-ar-label="جدول مقارنة المنتجات"></div>
+    </section>
+    <div id="saved-items" class="grid"></div>
+  </section>
+
+  <dialog id="detail" class="panel" aria-labelledby="detail-title">
+    <div class="section-head"><img id="detail-reference" alt="" hidden><h2 id="detail-title"></h2><button type="button" id="close-detail" class="ghost" data-ar="إغلاق">Close</button></div>
+    <p id="detail-status" class="status" role="status"></p>
+    <div id="detail-action" class="actions"></div>
+    <div id="detail-content"></div>
+  </dialog>
+  <section id="retailers-view" aria-labelledby="retailers-title" hidden>
+    <div class="retailer-spread">
+      <div class="retailer-story">
+        <div class="retailer-cover"><img src="/photo?url=https%3A%2F%2Fmedia.homecentre.com%2Fi%2Fhomecentre%2F165909719-165909719-HC10102023_02-2100.jpg%3Fv%3D1" alt="" loading="lazy"></div>
+        <div class="retailer-intro">
+          <h2 id="retailers-title" data-ar="اعرض سجاد متجرك على BuyWise">List your rugs on BuyWise</h2>
+          <p data-ar="أرسل روابط سجاد متجرك ليتمكّن المتسوّق من اكتشاف تصاميمك ومقارنتها.">Introduce your collection to shoppers looking for rugs like yours.</p>
+          <div id="merchant-contact"><span data-ar="بريد التواصل">Retailer enquiries</span>
+            <div class="address-row"><bdi id="merchant-address"></bdi><button type="button" id="copy-email" data-ar="نسخ البريد">Copy email</button></div>
+            <span id="copy-status" role="status"></span>
+          </div>
+        </div>
+      </div>
+      <form id="retailer-form" action="https://mail.google.com/mail/" method="get" target="_blank" rel="noopener noreferrer">
+        <h3 data-ar="طلب إضافة سجاد">Listing request</h3>
+        <p class="form-intro" data-ar="عبّئ بيانات متجرك، ثم راجع المسودة وأرسلها من بريدك.">Add your store details, then review and send the draft from your inbox.</p>
+        <label for="store-name" data-ar="اسم المتجر">Store name</label>
+        <input id="store-name" autocomplete="organization" dir="auto" maxlength="160" required>
+        <label for="store-website" data-ar="رابط المتجر">Store website</label>
+        <input id="store-website" type="url" dir="ltr" placeholder="https://" autocomplete="url" required>
+        <label for="rug-links" data-ar="روابط السجادات">Rug product links</label>
+        <textarea id="rug-links" dir="ltr" rows="3" required aria-describedby="links-hint"></textarea>
+        <small id="links-hint" data-ar="ضع رابط صفحة كل سجادة في سطر مستقل.">Add one rug product page per line.</small>
+        <input type="hidden" name="view" value="cm"><input type="hidden" name="fs" value="1"><input type="hidden" name="to"><input type="hidden" name="su"><input type="hidden" name="body">
+        <div class="request-actions"><button type="submit" class="primary" id="gmail-draft" data-ar="فتح المسودة في Gmail">Open draft in Gmail</button><button type="button" id="copy-request" data-ar="نسخ الطلب">Copy request</button></div>
+        <p class="hint" data-ar="تستخدم بريدًا آخر؟ انسخ الطلب وأرسله إلى عنوان التواصل.">Use another email service? Copy the request and send it to our contact address.</p>
+        <p role="status" id="request-status"></p>
+      </form>
+    </div>
+  </section>
 </main>
 
 <script>
-const form = document.querySelector("#search");
-const query = document.querySelector("#query");
-const results = document.querySelector("#results");
-const status = document.querySelector("#status");
-const similar = document.querySelector("#similar");
-const similarStatus = document.querySelector("#similar-status");
-let searchVersion = 0;
-let similarVersion = 0;
+const el = (selector) => document.querySelector(selector);
+const query = el("#q");
+const budget = el("#budget");
+let language = "en";
+try { if (localStorage.getItem("buywise-language") === "ar") language = "ar"; } catch {}
+const tr = (en, ar) => language === "ar" ? ar : en;
+const dateFormats = Object.fromEntries(["en", "ar"].map(lang => [
+  lang, new Intl.DateTimeFormat(lang === "ar" ? "ar-SA" : "en-GB", {
+    timeZone:"Asia/Riyadh", calendar:"gregory", dateStyle:"medium", timeStyle:"short"
+  })
+]));
+let browseMode = "keyword", selectedPattern = "", patternTiles = [], settings = {};
+let detailPage = null, onlineIds = null, onlineVersion = 0;
+let currentTab = "search", searchVersion = 0, detailVersion = 0, listVersion = 0;
+let savedItems = [];
+const compareIds = new Set();
+const comparePicks = new Map();
+const maxCompare = 3;
 
-async function getJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(response.status);
-  return response.json();
+function node(tag, text, className) {
+  const item = document.createElement(tag);
+  if (text !== undefined) item.textContent = text;
+  if (className) item.className = className;
+  return item;
 }
 
-function render(target, products, isSimilar = false) {
-  target.replaceChildren();
-  for (const product of products) {
-    const card = document.createElement("article");
-    if (product.image_url?.startsWith("https://")) {
-      const image = document.createElement("img");
-      image.src = product.image_url;
-      image.alt = "";
-      card.append(image);
-    }
-    const title = document.createElement("h3");
-    title.dir = "auto";
-    title.textContent = product.title;
-    card.append(title);
-
-    if (isSimilar) {
-      const score = document.createElement("p");
-      score.textContent = `درجة التشابه: ${product.similarity.toFixed(4)}`;
-      card.append(score);
-    } else {
-      const button = document.createElement("button");
-      button.textContent = "بدائل مشابهة";
-      button.addEventListener("click", () => showSimilar(product));
-      card.append(button);
-    }
-    addOffers(card, product);
-    target.append(card);
-  }
+function button(text, action, className) {
+  const item = node("button", text, className);
+  item.type = "button";
+  item.addEventListener("click", () => action(item));
+  return item;
 }
 
-async function showSimilar(product) {
-  const version = ++similarVersion;
-  similar.replaceChildren();
-  similarStatus.textContent = "جاري جلب البدائل...";
+function safeUrl(value) {
   try {
-    const items = await getJSON(`/products/${product.id}/similar`);
-    if (version !== similarVersion) return;
-    render(similar, items, true);
-    similarStatus.textContent = items.length
-      ? `بدائل لـ ${product.title}`
-      : "ما فيه بدائل لهذا المنتج.";
-  } catch {
-    if (version === similarVersion) {
-      similarStatus.textContent = "تعذّر جلب البدائل لهذا المنتج.";
-    }
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch { return null; }
+}
+
+function amount(value, currency = "SAR") {
+  return value == null ? "—" : Number(value).toFixed(2) + (currency === "SAR" ? tr(" SAR", " ر.س") : " " + currency);
+}
+
+async function api(path, method = "GET", body) {
+  const options = {method};
+  if (body !== undefined) {
+    options.headers = {"Content-Type":"application/json"};
+    options.body = JSON.stringify(body);
+  }
+  let response;
+  try { response = await fetch(path, options); }
+  catch { throw new Error(tr("Could not reach BuyWise. Check your connection and try again.", "تعذّر الاتصال بـ BuyWise. تحقّق من الاتصال وحاول مجددًا.")); }
+  let data;
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) {
+    const detail = typeof data.detail === "string" ? data.detail : "";
+    const messages = {
+      400: tr("Check the entered values and try again.", "تحقّق من البيانات وحاول مرة ثانية."),
+      404: tr("This item is unavailable.", "هذا المنتج غير متاح."),
+      409: tr("A new offer check is unavailable for this rug.", "جلب عروض جديدة غير متاح لهذه السجادة."),
+      422: tr("Check the entered values and try again.", "تحقّق من البيانات وحاول مرة ثانية."),
+      429: tr("New online checks have reached their limit. You can still browse saved results.", "وصلت عمليات البحث الجديدة إلى حدّها. تقدر تتصفح النتائج المحفوظة."),
+      502: tr("The retailer service is unavailable. Try again later.", "خدمة العروض غير متاحة الآن. حاول لاحقًا."),
+      503: tr("Online offers are temporarily unavailable.", "البحث عن عروض جديدة غير متاح حاليًا.")
+    };
+    const sameLanguage = language === "ar" ? /[ء-ي]/.test(detail) : detail && !/[ء-ي]/.test(detail);
+    const error = new Error(sameLanguage ? detail : messages[response.status] || tr("The request could not be completed.", "تعذّر إكمال الطلب."));
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+async function withProductInfo(rows) {
+  const info = [];
+  for (let i = 0; i < rows.length; i += 100) {
+    const params = new URLSearchParams();
+    for (const row of rows.slice(i,i+100)) params.append("ids", row.id);
+    info.push(...await api("/shop/api/product-info?" + params));
+  }
+  const byId = new Map(info.map(item => [item.id, item]));
+  return rows.map(row => ({...row, ...byId.get(row.id)}));
+}
+
+function imageFor(product) {
+  const frame = node("div", undefined, "image");
+  const url = safeUrl(product.image_url);
+  if (!url) {
+    frame.append(node("span",tr("No photo", "لا توجد صورة"),"placeholder"));
+    return frame;
+  }
+  const image = node("img");
+  image.src = "/photo?url=" + encodeURIComponent(url);
+  image.alt = product.title;
+  image.loading = "lazy";
+  image.referrerPolicy = "no-referrer";
+  image.addEventListener("error", () => frame.replaceChildren(node("span",tr("Photo unavailable", "الصورة غير متاحة"),"placeholder")));
+  frame.append(image);
+  return frame;
+}
+
+async function save(product, actionButton) {
+  actionButton.disabled = true;
+  try {
+    await api("/shop/api/list/" + product.id, "POST");
+    product.saved = true;
+    actionButton.textContent = tr("Saved", "تم الحفظ");
+  } catch (error) {
+    actionButton.textContent = tr("Retry save", "إعادة محاولة الحفظ");
+    actionButton.title = error.message;
+    actionButton.disabled = false;
   }
 }
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const version = ++searchVersion;
-  ++similarVersion;
-  results.replaceChildren();
-  similar.replaceChildren();
-  similarStatus.textContent = "";
-  status.textContent = "جاري البحث...";
-  try {
-    const items = await getJSON("/search?q=" + encodeURIComponent(query.value.trim()));
-    if (version !== searchVersion) return;
-    render(results, items);
-    status.textContent = items.length ? "" : "ما فيه نتائج.";
-  } catch {
-    if (version === searchVersion) status.textContent = "تعذّر البحث.";
+function productCard(product, kind) {
+  const card = node("article", undefined, "card");
+  card.dataset.id = product.id;
+  const title = node("h3", product.title);
+  title.dir = "auto";
+  const titleArea = node("div", undefined, "cards-title");
+  titleArea.append(title);
+
+  card.append(imageFor(product), titleArea);
+  if (product.size) card.append(node("p", product.size, "small"));
+  if (kind === "saved" || product.latest_price != null) {
+    const text = product.latest_price == null ? tr("No price recorded", "لا يوجد سعر محفوظ") :
+      tr("Lowest recorded price: ", "أقل سعر محفوظ: ") + amount(product.latest_price) + " · " + product.store;
+    card.append(node("p", text, "summary"));
+    if (product.observed_at) {
+      card.append(node("p", tr("Checked ", "وقت القراءة: ") + dateFormats[language].format(new Date(product.observed_at)), "small"));
+    }
+    if (product.target_price && product.latest_price != null &&
+        Number(product.latest_price) <= Number(product.target_price)) {
+      card.append(node("span", tr("Within target price", "آخر سعر عند هدفك أو أقل"), "badge"));
+    }
   }
-});
-function addOffers(card, product) {
-  const details = document.createElement("details");
-  const summary = document.createElement("summary");
-  summary.textContent = "عروض المتاجر";
+  const actions = node("div", undefined, "actions");
+  if (kind !== "similar" && product.category === "rugs") actions.append(button(tr("Similar rugs", "بدائل مشابهة"), () => showSimilar(product)));
+  actions.append(button(tr("Price offers", "عروض الأسعار"), () => showOffers(product)));
+  if (kind === "saved") {
+    const pick = button(tr("Select to compare", "حدد للمقارنة"), () => toggleComparison(product.id), "compare-pick");
+    comparePicks.set(product.id, pick);
+    actions.append(pick);
+  } else {
+    const add = button(product.saved ? tr("Saved", "محفوظ") : tr("Save", "احفظ"), (target) => save(product, target), "primary");
+    if (product.saved) add.disabled = true;
+    actions.append(add);
+  }
+  card.append(actions);
+  if (kind === "saved") card.append(savedForm(product));
+  return card;
+}
 
-  const content = document.createElement("div");
-  details.append(summary, content);
-  card.append(details);
-
-  let loaded = false;
-  let loading = false;
-
-  details.addEventListener("toggle", async () => {
-    if (!details.open || loaded || loading) return;
-
-    loading = true;
-    content.textContent = "جاري جلب العروض...";
-
+function savedForm(product) {
+  const form = node("form", undefined, "saved-fields");
+  form.dataset.id = product.id;
+  const targetLabel = node("label", tr("Target price (SAR)", "سعر مستهدف (ر.س)"));
+  const target = node("input");
+  target.type = "number"; target.min = "0.01"; target.step = "0.01";
+  target.max = "9999999999.99"; target.value = product.target_price || "";
+  target.dir = "ltr";
+  targetLabel.append(target);
+  const noteLabel = node("label", tr("Your note", "ملاحظتك"));
+  const note = node("textarea");
+  note.maxLength = 500; note.value = product.note || "";
+  noteLabel.append(note);
+  const state = node("p", undefined, "status");
+  state.setAttribute("role","status");
+  const actions = node("div", undefined, "actions");
+  const submit = node("button",tr("Save changes", "حفظ التعديلات"),"primary");
+  submit.type = "submit";
+  const remove = button(tr("Remove", "إزالة"), async (actionButton) => {
+    actionButton.disabled = true;
     try {
-      const offers = await getJSON(`/products/${product.id}/offers`);
-      content.replaceChildren();
-
-      if (!offers.length) {
-        content.textContent = "لا توجد عروض محفوظة لهذا المنتج بعد.";
-      }
-
-      for (const offer of offers) {
-        const box = document.createElement("div");
-
-        const store = document.createElement("h4");
-        store.textContent = offer.store;
-
-        const price = document.createElement("p");
-        price.textContent = offer.price === null
-          ? "لا يوجد سعر محفوظ."
-          : `آخر سعر محفوظ: ${offer.price} ${offer.currency}`;
-
-        box.append(store, price);
-
-        if (offer.observed_at) {
-          const time = document.createElement("p");
-          time.textContent = "وقت القراءة: " +
-            new Date(offer.observed_at).toLocaleString("ar-SA", {
-              timeZone: "Asia/Riyadh",
-              calendar: "gregory",
-            });
-          box.append(time);
-        }
-
-        if (/^https?:\/\//i.test(offer.url)) {
-          const link = document.createElement("a");
-          link.href = offer.url;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = "فتح صفحة المتجر";
-          box.append(link);
-        }
-
-        content.append(box);
-      }
-
-      loaded = true;
-    } catch {
-      content.textContent =
-        "تعذّر جلب العروض. أغلق القائمة وافتحها للمحاولة مجددًا.";
-    } finally {
-      loading = false;
+      await api("/shop/api/list/" + product.id, "DELETE");
+      await loadList();
+    } catch (error) {
+      state.textContent = error.message;
+      actionButton.disabled = false;
     }
+  }, "ghost");
+  actions.append(submit, remove);
+  form.append(targetLabel, noteLabel, actions, state);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    try {
+      await api("/shop/api/list/" + product.id, "PUT", {
+        target_price: target.value || null, note: note.value
+      });
+      await loadList();
+      el("#list-status").textContent = tr("Changes saved.", "تم حفظ التعديلات.");
+    } catch (error) { state.textContent = error.message; }
+    finally { submit.disabled = false; }
   });
+  return form;
 }
-const discoverButton = document.querySelector("#discover-button");
-const discoverCategory = document.querySelector("#discover-category");
-const discoverStatus = document.querySelector("#discover-status");
 
-discoverButton.addEventListener("click", async () => {
-  const text = query.value.trim();
-  if (text.length < 2 || text.length > 120) {
-    discoverStatus.textContent = "اكتب عبارة بحث بين حرفين و120 حرفًا.";
+let detailOpener = null;
+function openDetail(title, product) {
+  const preview = el("#detail-reference");
+  const url = safeUrl(product.image_url);
+  preview.hidden = !url;
+  if (url) preview.src = "/photo?url=" + encodeURIComponent(url);
+  const version = ++detailVersion;
+  el("#detail-title").textContent = title;
+  el("#detail-status").textContent = tr("Loading…", "جاري التحميل...");
+  el("#detail-action").replaceChildren();
+  el("#detail-content").replaceChildren();
+  el("#detail-content").className = "";
+  const dialog = el("#detail");
+  if (!dialog.open) {
+    detailOpener = document.activeElement;
+    dialog.showModal();
+  }
+  el("#close-detail").focus({preventScroll:true});
+  return version;
+}
+
+function closeDetail() {
+  detailPage = null;
+  ++detailVersion;
+  if (el("#detail").open) {
+    el("#detail").close();
+    if (detailOpener?.isConnected) detailOpener.focus({preventScroll:true});
+    detailOpener = null;
+  }
+}
+el("#close-detail").addEventListener("click", closeDetail);
+
+el("#detail").addEventListener("cancel", event => { event.preventDefault(); closeDetail(); });
+function outsideDialog(event) {
+  const box = event.currentTarget.getBoundingClientRect();
+  return event.target === event.currentTarget &&
+    (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
+}
+let pressedBackdrop = false;
+el("#detail").addEventListener("pointerdown", event => { pressedBackdrop = outsideDialog(event); });
+el("#detail").addEventListener("click", event => { if (pressedBackdrop && outsideDialog(event)) closeDetail(); pressedBackdrop = false; });
+
+async function showSimilar(product, step = 0, trigger = null) {
+  const version = trigger ? ++detailVersion : openDetail(tr("Similar rugs", "بدائل مشابهة"), product);
+  if (trigger) trigger.disabled = true;
+  else detailPage = {type:"similar", product, step};
+  try {
+    const data = await api("/shop/api/products/" + product.id + "/alternatives?step=" + step);
+    if (version !== detailVersion) return;
+    const content = el("#detail-content");
+    const existing = Array.from(content.children);
+    const keep = trigger && existing.every((card, i) => card.dataset.id === String(data.products[i]?.id))
+      ? existing.length : 0;
+    const rows = await withProductInfo(data.products.slice(keep));
+    if (version !== detailVersion) return;
+    detailPage = {type:"similar", product, step};
+    el("#detail-title").textContent = data.broadened ? tr("Broader matches", "بدائل بنطاق أوسع") : tr("Similar rugs", "بدائل مشابهة");
+    content.className = "grid";
+    if (!keep) content.replaceChildren();
+    content.append(...rows.map(row => productCard(row,"similar")));
+    el("#detail-action").replaceChildren();
+    const status = [product.title];
+    if (data.products.length) status.push(tr("Matches", "عدد البدائل") + ": " + data.products.length);
+    else status.push(tr("No rugs in this range.", "لا توجد سجادات ضمن هذا النطاق."));
+    el("#detail-status").textContent = status.join(" · ");
+    if (data.can_widen) {
+      const label = tr("Broaden matches", "وسّع نطاق التشابه") + " (+" + data.next_additions + ")";
+      const widen = button(label, target => showSimilar(product, step + 1, target), "primary");
+      widen.id = "broaden-matches";
+      el("#detail-action").append(widen);
+    }
+    if (step) {
+      el("#detail-action").append(button(tr("Reset to closest", "ارجع للأقرب"), () => showSimilar(product)));
+    }
+    if (trigger) el("#detail-action button")?.focus({preventScroll:true});
+  } catch {
+    if (version !== detailVersion) return;
+    if (trigger) {
+      trigger.disabled = false;
+      el("#detail-status").textContent = tr("Could not load more rugs. Try again.", "تعذّر تحميل البدائل الإضافية. حاول مجددًا.");
+      return;
+    }
+    if (version === detailVersion) el("#detail-status").textContent =
+      tr("Image matches are unavailable. A newly added rug may still be indexing.", "البدائل غير متاحة حاليًا. قد تكون صورة السجادة الجديدة قيد الفهرسة.");
+  }
+}
+
+function offerCard(offer) {
+  const card = node("article", undefined, "offer");
+  card.append(node("h4", offer.store), node("p", tr("Last recorded price: ", "آخر سعر محفوظ: ") + amount(offer.price,offer.currency), "price"));
+  if (offer.size) card.append(node("p", offer.size, "small"));
+  if (offer.advertised_title) {
+    const title = node("p", offer.advertised_title, "small");
+    title.dir = "auto";
+    card.append(title);
+  }
+  if (offer.observed_at) {
+    card.append(node("p", tr("Checked ", "وقت القراءة: ") + dateFormats[language].format(new Date(offer.observed_at)), "small"));
+  }
+  const row = node("div", undefined, "actions");
+  const url = safeUrl(offer.url);
+  if (url) {
+    const link = node("a",tr("Visit retailer", "صفحة المتجر"));
+    link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
+    row.append(link);
+  }
+  const history = node("div", undefined, "history");
+  history.hidden = true;
+  const historyButton = button(tr("Price history", "سجل السعر"), async (target) => {
+    if (!history.hidden) { history.hidden = true; return; }
+    history.hidden = false;
+    history.textContent = tr("Loading price history…", "جاري تحميل السجل...");
+    target.disabled = true;
+    try {
+      const data = await api("/price-history?offer_id=" + offer.id);
+      const readings = data.readings.slice(-15).reverse();
+      history.replaceChildren();
+      if (!readings.length) history.textContent = tr("No recorded prices.", "لا توجد قراءات.");
+      for (const reading of readings) {
+        const line = node("p");
+        line.append(node("strong",amount(reading.price,offer.currency)),
+          node("span",dateFormats[language].format(new Date(reading.observed_at)),"small"));
+        history.append(line);
+      }
+    } catch (error) { history.textContent = error.message; }
+    finally { target.disabled = false; }
+  });
+  row.append(historyButton);
+  card.append(row, history);
+  return card;
+}
+
+async function showOffers(product) {
+  detailPage = {type:"offers", product};
+  const version = openDetail(tr("Offers for ", "عروض ") + product.title, product);
+  const detailStatus = el("#detail-status");
+  const detailContent = el("#detail-content");
+  async function loadOffers(message = "") {
+    const rows = await api("/shop/api/products/" + product.id + "/offers");
+    if (version !== detailVersion) return;
+    detailContent.replaceChildren(...rows.map(offerCard));
+    if (rows.some(offer => offer.direct) && !el("#refresh-retail")) {
+      const refresh = button(tr("Refresh retailer price", "تحديث السعر من المتجر"), async target => {
+        target.disabled = true;
+        try {
+          const result = await api("/shop/api/products/" + product.id + "/refresh","POST");
+          if (version !== detailVersion) return;
+          await loadOffers(result.saved ? tr("Price updated from the retailer.", "تم تحديث السعر من صفحة المتجر.") : tr("Could not confirm this offer. Showing the previous price.", "تعذّر تأكيد نفس العرض. احتفظنا بالقراءة السابقة."));
+          if (currentTab === "list") await loadList();
+        } catch (error) { if (version === detailVersion) detailStatus.textContent = error.message; }
+        finally { target.disabled = false; }
+      });
+      refresh.id = "refresh-retail";
+      el("#detail-action").append(refresh);
+    }
+    detailStatus.textContent = message || (rows.length
+      ? tr("See the retailer for the current price, colour and size.", "الأسعار من آخر قراءة محفوظة؛ راجع صفحة المتجر للون والنسخة والسعر الحالي.")
+      : tr("No saved offers for this rug.", "ما فيه عروض محفوظة لهذا المنتج."));
+  }
+  if (product.can_scan) {
+    el("#detail-action").append(button(tr("Find offers online", "جلب عروض عبر SerpApi"), async (target) => {
+      target.disabled = true;
+      detailStatus.textContent = tr("Finding offers…", "جاري جلب العروض...");
+      try {
+        const data = await api("/shop/api/products/" + product.id + "/scan-offers", "POST");
+        const message = data.cached ? tr("Showing the saved offer check.", "استخدمنا نتيجة الجلب المحفوظة.")
+          : data.saved ? tr("Saved ", "تم حفظ ") + data.saved + tr(" offers. Check the variant at the retailer.", " عرضًا. تأكد من النسخة في المتجر.")
+          : tr("No matching offers found at supported retailers.", "لم يرجع المصدر عروضًا قابلة للحفظ من المتاجر المدعومة.");
+        await loadOffers(message);
+        if (currentTab === "list") await loadList();
+      } catch (error) { if (version === detailVersion) detailStatus.textContent = error.message; }
+      finally { target.disabled = false; }
+    }, "primary"));
+  }
+  try { await loadOffers(); }
+  catch (error) { if (version === detailVersion) detailStatus.textContent = error.message; }
+}
+
+function updateBudget() {
+  const priced = savedItems.filter(item => item.latest_price != null);
+  const total = priced.reduce((sum,item) => sum + Math.round(Number(item.latest_price)*100),0);
+  const limit = budget.value === "" ? null : Math.round(Number(budget.value)*100);
+  const missing = savedItems.length - priced.length;
+  const text = !savedItems.length ? tr("Save rugs to see a total.", "احفظ منتجات لعرض المجموع.") :
+    !priced.length ? tr("No prices recorded for these rugs.", "ما فيه أسعار محفوظة لمنتجات القائمة.") :
+    tr("Recorded total: ", "مجموع الأسعار المحفوظة: ") + amount(total/100) +
+    (missing ? " · " + missing + tr(" unpriced", " بدون سعر") : "") +
+    (limit !== null && limit >= 0 ? " · " + (total <= limit ? tr("Remaining: ", "متبقّي ") : tr("Over budget by ", "فوق الميزانية بـ ")) +
+      amount(Math.abs(limit-total)/100) + (missing ? tr(" based on available prices", " حسب الأسعار المتاحة") : "") : "");
+  el("#budget-status").textContent = text;
+}
+
+function closeComparison() {
+  el("#comparison").hidden = true;
+  el("#compare-button").setAttribute("aria-expanded", "false");
+}
+
+function renderComparison() {
+  const rows = savedItems.filter(item => compareIds.has(item.id));
+  if (rows.length < 2) {
+    closeComparison();
     return;
   }
 
-  const params = "q=" + encodeURIComponent(text)
-    + "&category=" + encodeURIComponent(discoverCategory.value);
-
-  discoverButton.disabled = true;
-  discoverStatus.textContent = "جاري جلب المنتجات...";
-
-  try {
-    const response = await fetch("/discover?" + params, {method: "POST"});
-    const data = await response.json();
-
-    if (!response.ok) {
-      discoverStatus.textContent = typeof data.detail === "string"
-        ? data.detail
-        : "تعذّر جلب المنتجات.";
-      return;
-    }
-
-    discoverStatus.textContent = `دفعة «${text}»: ${data.count} منتجًا.`;
-    if (query.value.trim() === text) form.requestSubmit();
-  } catch {
-    discoverStatus.textContent = "تعذّر جلب المنتجات.";
-  } finally {
-    discoverButton.disabled = false;
+  const known = rows.filter(item => item.latest_price != null);
+  const lowest = known.length >= 2 ? Math.min(...known.map(item => Number(item.latest_price))) : null;
+  const table = node("table", undefined, "compare-table");
+  const head = node("thead");
+  const header = node("tr");
+  const feature = node("th", tr("Detail", "التفصيل"));
+  feature.scope = "col";
+  header.append(feature);
+  for (const item of rows) {
+    const title = node("th", item.title);
+    title.scope = "col";
+    title.dir = "auto";
+    header.append(title);
   }
+  head.append(header);
+  table.append(head);
+
+  const body = node("tbody");
+  const fields = [
+    [tr("Lowest recorded price", "أقل سعر محفوظ"), item => item.latest_price == null ? tr("No price recorded", "لا يوجد سعر محفوظ") : amount(item.latest_price)],
+    [tr("Offer size", "مقاس العرض"), item => item.size || tr("Unavailable", "غير متاح")],
+    [tr("Retailer", "المتجر"), item => item.store || "—"],
+    [tr("Last checked", "وقت القراءة"), item => item.observed_at ? dateFormats[language].format(new Date(item.observed_at)) : "—"],
+    [tr("Target price", "السعر المستهدف"), item => amount(item.target_price)],
+    [tr("Your note", "ملاحظتك"), item => item.note || "—"],
+  ];
+  for (const [label, value] of fields) {
+    const row = node("tr");
+    const name = node("th", label);
+    name.scope = "row";
+    row.append(name);
+    for (const item of rows) {
+      const cell = node("td", value(item));
+      if (label === tr("Lowest recorded price", "أقل سعر محفوظ") && lowest !== null && item.latest_price != null &&
+          Number(item.latest_price) === lowest) {
+        cell.className = "best";
+      }
+      row.append(cell);
+    }
+    body.append(row);
+  }
+  table.append(body);
+  el("#compare-content").replaceChildren(table);
+}
+
+function syncComparison() {
+  const count = compareIds.size;
+  for (const [id, pick] of comparePicks) {
+    const selected = compareIds.has(id);
+    pick.textContent = selected ? tr("Selected", "محدد للمقارنة") : tr("Select to compare", "حدد للمقارنة");
+    pick.setAttribute("aria-pressed", String(selected));
+    pick.disabled = count === maxCompare && !selected;
+  }
+  el("#compare-button").disabled = count < 2;
+  el("#compare-status").textContent = count === 0
+    ? tr("Choose two or three rugs to compare.", "اختر منتجين أو ثلاثة من قائمتك.")
+    : tr("Selected ", "تم تحديد ") + count + tr(" of ", " من ") + maxCompare;
+  if (!el("#comparison").hidden) renderComparison();
+}
+
+function toggleComparison(id) {
+  if (compareIds.has(id)) compareIds.delete(id);
+  else if (comparePicks.has(id) && compareIds.size < maxCompare) compareIds.add(id);
+  syncComparison();
+}
+
+el("#compare-button").addEventListener("click", () => {
+  if (compareIds.size < 2) return;
+  closeDetail();
+  renderComparison();
+  el("#comparison").hidden = false;
+  el("#compare-button").setAttribute("aria-expanded", "true");
+  el("#compare-content").focus({preventScroll:true});
+  el("#comparison").scrollIntoView({block:"start",behavior:"smooth"});
 });
-form.requestSubmit();
+el("#close-comparison").addEventListener("click", () => {
+  closeComparison();
+  el("#compare-button").focus();
+});
+
+async function loadList() {
+  const version = ++listVersion;
+  const state = el("#list-status");
+  state.textContent = tr("Loading shortlist…", "جاري تحميل القائمة...");
+  try {
+    const rows = await api("/shop/api/list");
+    if (version !== listVersion) return;
+    savedItems = rows;
+    const savedIds = new Set(rows.map(item => item.id));
+    for (const id of compareIds) if (!savedIds.has(id)) compareIds.delete(id);
+    comparePicks.clear();
+    el("#saved-items").replaceChildren(...rows.map(row => productCard(row,"saved")));
+    state.textContent = rows.length ? rows.length + tr(" saved", " منتجًا محفوظًا") : tr("Your shortlist is empty. Save a rug from the catalog.", "قائمتك فاضية. احفظ منتجًا من نتائج البحث.");
+    updateBudget();
+    syncComparison();
+  } catch (error) { if (version === listVersion) state.textContent = error.message; }
+}
+
+async function runSearch() {
+  const version = ++searchVersion;
+  const state = el("#search-status");
+  closeDetail();
+  el("#results").replaceChildren();
+  const patterned = browseMode === "pattern";
+  const group = patterned && patternTiles.find(tile => tile.key === selectedPattern);
+  el("#results-title").textContent = group ? group[language] : onlineIds !== null && !patterned
+    ? tr("Online results", "نتائج الإنترنت") : tr("Rug catalog", "كتالوج السجاد");
+  if (patterned && !group) { state.textContent = ""; return; }
+  state.textContent = tr("Searching…", "جاري البحث…");
+  try {
+    const params = new URLSearchParams({q:patterned ? "" : query.value.trim()});
+    if (group) params.set("pattern", group.key);
+    const rows = !patterned && onlineIds !== null ? onlineIds.map(id => ({id})) : await api("/search?" + params);
+    const visible = await withProductInfo(rows);
+    if (version !== searchVersion) return;
+    el("#results").replaceChildren(...visible.map(row => productCard(row,"search")));
+    state.textContent = visible.length ? visible.length + tr(" results", " نتيجة") :
+      tr("No rugs found. Try another search.", "ما لقينا سجاد. جرّب عبارة ثانية.");
+  } catch (error) { if (version === searchVersion) state.textContent = error.message; }
+}
+
+function drawPatterns() {
+  el("#patterns").replaceChildren(...patternTiles.map(tile => {
+    const pick = button("", () => {
+      selectedPattern = tile.key;
+      drawPatterns();
+      runSearch();
+    }, "pattern-tile");
+    const photo = node("img");
+    photo.src = "/photo?url=" + encodeURIComponent(tile.image_url);
+    photo.alt = "";
+    pick.setAttribute("aria-pressed", String(tile.key === selectedPattern));
+    pick.append(photo, node("span", tile[language]), node("small", tile.count));
+    return pick;
+  }));
+}
+
+async function setBrowseMode(mode) {
+  browseMode = mode;
+  ++onlineVersion;
+  el("#discover").disabled = false;
+  el("#discover-status").textContent = "";
+  const patterned = mode === "pattern";
+  el("#keywords").hidden = patterned;
+  el("#patterns").hidden = !patterned;
+  el("#pattern-instruction").hidden = !patterned;
+  el("#keyword-mode").setAttribute("aria-pressed", String(!patterned));
+  el("#pattern-mode").setAttribute("aria-pressed", String(patterned));
+  if (patterned && !patternTiles.length) {
+    ++searchVersion;
+    closeDetail();
+    el("#results").replaceChildren();
+    el("#search-status").textContent = tr("Loading patterns…", "جاري تحميل النقوش…");
+    try { patternTiles = await api("/shop/api/patterns"); }
+    catch (error) { if (browseMode === mode) el("#search-status").textContent = error.message; return; }
+    if (browseMode !== mode) return;
+  }
+  if (patterned) {
+    if (!selectedPattern && patternTiles.length) selectedPattern = patternTiles[0].key;
+    drawPatterns();
+  }
+  await runSearch();
+}
+el("#keyword-mode").onclick = () => setBrowseMode("keyword");
+el("#pattern-mode").onclick = () => setBrowseMode("pattern");
+
+function switchTab(name) {
+  currentTab = name;
+  closeDetail();
+  for (const tab of ["search","list","retailers"]) {
+    el("#" + tab + "-view").hidden = tab !== name;
+    el("#" + tab + "-tab").setAttribute("aria-pressed", String(tab === name));
+  }
+  if (name === "retailers") {
+    ++searchVersion;
+    return;
+  }
+  if (name === "list") {
+    ++searchVersion;
+    loadList();
+  } else if (browseMode === "pattern") setBrowseMode("pattern");
+  else runSearch();
+}
+
+el("#search-tab").addEventListener("click", () => switchTab("search"));
+el("#retailers-tab").addEventListener("click", () => switchTab("retailers"));
+el("#list-tab").addEventListener("click", () => switchTab("list"));
+el("#search-form").addEventListener("submit", event => {
+  event.preventDefault();
+  ++onlineVersion;
+  el("#discover").disabled = false;
+  onlineIds = null;
+  el("#discover-status").textContent = "";
+  runSearch();
+});
+el("#discover").addEventListener("click", async event => {
+  const target = event.currentTarget, state = el("#discover-status");
+  const text = query.value.trim();
+  if (text.length < 2) { state.textContent = tr("Enter a rug or pattern name first.", "اكتب اسم سجادة أو نقشة أولًا."); query.focus(); return; }
+  const version = ++onlineVersion;
+  target.disabled = true;
+  state.textContent = tr("Searching online…", "جاري البحث عبر الإنترنت…");
+  try {
+    const data = await api("/discover?" + new URLSearchParams({q:text,category:"rugs"}), "POST");
+    if (version !== onlineVersion || query.value.trim() !== text) return;
+    onlineIds = data.product_ids;
+    state.textContent = data.index_scheduled ? tr("New photos are being indexed.", "جاري فهرسة الصور الجديدة.") : "";
+    if (currentTab === "search" && browseMode === "keyword") await runSearch();
+  } catch (error) {
+    if (version !== onlineVersion) return;
+    if (error.status === 429) state.textContent = error.message;
+    else state.textContent = tr("Online search is temporarily unavailable. You can still browse the catalog.", "البحث عبر الإنترنت غير متاح حاليًا. تقدر تتصفح الكتالوج المحفوظ.");
+  } finally { if (version === onlineVersion) target.disabled = false; }
+});
+
+const merchantForm = el("#retailer-form");
+function merchantContact() {
+  const address = settings.merchant_email || "";
+  el("#merchant-address").textContent = address || tr("Contact unavailable", "البريد غير متاح");
+  merchantForm.elements.to.value = address;
+  el("#copy-email").disabled = !address;
+  el("#gmail-draft").disabled = !address;
+}
+
+function prepareRequest() {
+  const name = el("#store-name"), site = el("#store-website"), links = el("#rug-links");
+  name.setCustomValidity(name.value.trim() ? "" : tr("Enter your store name.", "أدخل اسم المتجر."));
+  site.setCustomValidity(safeUrl(site.value) ? "" : tr("Enter a website address starting with https:// or http://.", "اكتب رابطًا يبدأ بـ https:// أو http://."));
+  const urls = links.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  links.setCustomValidity(urls.length && urls.every(url => safeUrl(url))
+    ? "" : tr("Enter a product link on each line.", "أدخل رابط منتج صالحًا في كل سطر."));
+  if (!merchantForm.reportValidity()) return false;
+  merchantForm.elements.su.value = tr("Rug listing request", "طلب إضافة سجاد") + " — " + name.value.trim();
+  merchantForm.elements.body.value = [
+    tr("Store name", "اسم المتجر") + ": " + name.value.trim(),
+    tr("Store website", "رابط المتجر") + ": " + site.value.trim(),
+    tr("Rug product links", "روابط السجادات") + ":\n" + urls.join("\n")
+  ].join("\n\n");
+  return true;
+}
+merchantForm.addEventListener("input", event => {
+  event.target.setCustomValidity("");
+  el("#request-status").textContent = "";
+});
+merchantForm.addEventListener("submit", event => {
+  if (!prepareRequest() || !settings.merchant_email) event.preventDefault();
+});
+
+async function copyContactText(value, status, success) {
+  try {
+    await navigator.clipboard.writeText(value);
+    status.textContent = success;
+  } catch {
+    const box = node("textarea");
+    box.value = value;
+    box.readOnly = true;
+    const hint = tr("Select and copy the text below.", "حدد النص التالي وانسخه.");
+    box.setAttribute("aria-label",hint);
+    status.replaceChildren(document.createTextNode(hint),box);
+    box.focus(); box.select();
+  }
+}
+el("#copy-email").onclick = () => copyContactText(settings.merchant_email, el("#copy-status"), tr("Email copied.", "تم نسخ البريد."));
+el("#copy-request").onclick = () => {
+  if (prepareRequest()) copyContactText(merchantForm.elements.su.value + "\n\n" + merchantForm.elements.body.value,
+    el("#request-status"), tr("Request copied.", "تم نسخ الطلب."));
+};
+
+function translatePage() {
+  document.documentElement.lang = language;
+  document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+  for (const item of document.querySelectorAll("[data-ar]")) {
+    item.dataset.en ??= item.textContent;
+    item.textContent = tr(item.dataset.en, item.dataset.ar);
+  }
+  for (const [attr, key] of [["aria-label","Label"], ["placeholder","Placeholder"]]) {
+    for (const item of document.querySelectorAll("[data-ar-" + key.toLowerCase() + "]")) {
+      item.dataset["en" + key] ??= item.getAttribute(attr);
+      item.setAttribute(attr, tr(item.dataset["en" + key], item.dataset["ar" + key]));
+    }
+  }
+  el("#language").textContent = tr("العربية", "English");
+  el("#language").lang = tr("ar", "en");
+  merchantContact();
+}
+
+el("#language").onclick = async () => {
+  const detail = detailPage;
+  const drafts = [...document.querySelectorAll("#saved-items form")].map(form => [form.dataset.id, form.querySelector("input").value, form.querySelector("textarea").value]);
+  language = language === "en" ? "ar" : "en";
+  try { localStorage.setItem("buywise-language", language); } catch {}
+  translatePage();
+  el("#discover-status").textContent = "";
+  if (currentTab === "list") {
+    await loadList();
+    for (const [id, price, note] of drafts) {
+      const form = document.querySelector('#saved-items form[data-id="' + id + '"]');
+      if (form) { form.querySelector("input").value = price; form.querySelector("textarea").value = note; }
+    }
+  } else if (currentTab === "search") {
+    if (browseMode === "pattern") drawPatterns();
+    await runSearch();
+  }
+  if (detail) await (detail.type === "similar" ? showSimilar(detail.product, detail.step) : showOffers(detail.product));
+};
+
+try { budget.value = localStorage.getItem("buywise-budget-sar") || ""; } catch {}
+budget.addEventListener("input", () => {
+  try { localStorage.setItem("buywise-budget-sar",budget.value); } catch {}
+  updateBudget();
+});
+translatePage();
+if (location.protocol === "file:") {
+  document.querySelector("main").hidden = true;
+  const notice = el("#local-file");
+  notice.hidden = false;
+  notice.append(node("p", "شغّل Start_BuyWise.cmd ثم افتح التطبيق من الرابط. · Start BuyWise, then open the shop below."));
+  const link = node("a", "Open BuyWise · افتح التطبيق");
+  link.href = "http://127.0.0.1:8002/shop";
+  notice.append(link);
+} else {
+api("/shop/api/settings").then(data => { settings = data; merchantContact(); }).catch(() => {});
+runSearch();
+}
 </script>
 </body>
 </html>

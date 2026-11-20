@@ -1,52 +1,59 @@
-from getpass import getpass
-from nltk.stem import PorterStemmer
-from math import sqrt
-from pathlib import Path
-from fastapi.responses import FileResponse
+import json
 import re
-import psycopg
-import uvicorn
-from fastapi import FastAPI, HTTPException
+from hashlib import sha256
+from importlib.util import find_spec
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from buywise_discover import discover_products
-from fastapi import BackgroundTasks
-from buywise_image_index import index_missing_images
-stemmer = PorterStemmer()
+from buywise_db import connect_db
+from buywise_image_index import approved_image, index_missing_images
+from buywise_retrieval import catalog, ranked, terms, threshold
 
-
-def search_terms(text):
-    words = re.findall(r"\w+", text.lower())
-    return [
-        stemmer.stem(word) if word.isascii() and word.isalpha() else word
-        for word in words
-    ]
-CATEGORY_TERMS = {
-    "headphones": "headphones",
-    "keyboards": "keyboard",
-    "mice": "mouse mice",
+BASE = Path(__file__).parent
+STORE_NAMES = {
+    "ABYAT": "أبيات ابيات", "CB2": "سي بي تو",
+    "Zara Home": "زارا زارا هوم", "Weft Rug": "ويفت",
+    "IKEA": "ايكيا إيكيا", "Home Centre": "هوم سنتر",
 }
 
 
-def product_search_terms(title, category):
-    terms = set(search_terms(title))
-    terms.update(search_terms(CATEGORY_TERMS.get(category, "")))
+def photo(url):
+    if not approved_image(url):
+        raise HTTPException(404, "Unsupported photo")
+    local = BASE / "photos" / (sha256(url.encode()).hexdigest() + ".jpg")
+    return FileResponse(local) if local.is_file() else RedirectResponse(url)
 
-    if re.search(
-        r"\b(?:wireless|bluetooth)\b|لاسلك|بلوتوث|אלחוט",
-        title,
-        re.IGNORECASE,
-    ):
-        terms.update(search_terms("wireless"))
 
-    return terms
-def create_app(password, serpapi_key=""):
+def create_app(password, serpapi_key="", claim_online=None):
     app = FastAPI()
+    patterns = json.loads((BASE / "rug_patterns.json").read_text(encoding="utf-8"))
+
+    @app.get("/shop/api/settings")
+    def shop_settings():
+        settings = json.loads((BASE / "shop_settings.json").read_text(encoding="utf-8-sig"))
+        email = str(settings.get("merchant_email", "")).strip()
+        valid = re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", email)
+        return {"merchant_email": email if valid else "", "online_enabled": bool(serpapi_key)}
+
+    @app.get("/shop/api/patterns")
+    def pattern_tiles():
+        with connect_db(password) as conn:
+            photos = dict(conn.execute(
+                "SELECT model_key, image_url FROM products WHERE category='rugs'"
+            ).fetchall())
+        tiles = []
+        for key, group in patterns.items():
+            present = [item for item in group["products"] if item in photos]
+            if present:
+                cover = photos.get(group["cover"]) or photos[present[0]]
+                tiles.append(dict(key=key, en=group["en"], ar=group["ar"],
+                                  image_url=cover, count=len(present)))
+        return tiles
 
     @app.get("/price-history")
     def price_history(offer_id: int = 1):
-        with psycopg.connect(
-            host="localhost", port=5432, dbname="buywise",
-            user="postgres", password=password,
-        ) as conn:
+        with connect_db(password) as conn:
             offer = conn.execute(
                 """
                 SELECT products.title, offers.store, offers.currency
@@ -80,6 +87,11 @@ def create_app(password, serpapi_key=""):
                 for price, observed_at in readings
             ],
         }
+
+    @app.get("/photo")
+    def product_photo(url: str):
+        return photo(url)
+
     @app.get("/")
     def home():
         return FileResponse(
@@ -88,91 +100,71 @@ def create_app(password, serpapi_key=""):
         )
 
     @app.get("/search")
-    def search_products(q: str):
-        words = search_terms(q)
-        if not words:
-            return []
-
-        with psycopg.connect(
-            host="localhost", port=5432, dbname="buywise",
-            user="postgres", password=password,
-        ) as conn:
-            products = conn.execute(
-                "SELECT id, title, image_url, category FROM products"
-            ).fetchall()
-
-        index = {}
-        catalog = {}
-
-        for product_id, title, image_url, category in products:
-            catalog[product_id] = {
-                "id": product_id,
-                "title": title,
-                "image_url": image_url,
-            }
-            for word in product_search_terms(title,category):
-                index.setdefault(word, set()).add(product_id)
-
-        matches = index.get(words[0], set())
-        for word in words[1:]:
-            matches = matches & index.get(word, set())
-
-        return [catalog[product_id] for product_id in sorted(matches)]
-    @app.get("/products/{product_id}/similar")
-    def similar_products(product_id: int):
-        with psycopg.connect(
-            host="localhost", port=5432, dbname="buywise",
-            user="postgres", password=password,
-        ) as conn:
+    def search_products(q: str, pattern: str | None = None):
+        if pattern is not None and pattern not in patterns:
+            raise HTTPException(422, "Unknown pattern")
+        members = set(patterns[pattern]["products"]) if pattern else None
+        query = terms(q)
+        aliases = terms("rug rugs carpet carpets سجادة سجاد")
+        with connect_db(password) as conn:
             rows = conn.execute(
-                """
-                SELECT p.id, p.title, p.image_url, e.embedding
-                FROM products AS p
-                JOIN product_image_embeddings AS e ON e.product_id = p.id
-                WHERE e.model_name = %s
-                  AND e.source_url = p.image_url
-                  AND p.category = (
-                      SELECT category FROM products WHERE id = %s
-                  )
-                """,
-                ("openai/clip-vit-base-patch32", product_id),
+                """SELECT p.id, p.title, p.image_url, p.size_label, p.model_key,
+                          ARRAY(SELECT DISTINCT o.store FROM offers o WHERE o.product_id=p.id)
+                   FROM products p WHERE p.category='rugs' ORDER BY p.id"""
             ).fetchall()
+        return [
+            {"id": pid, "title": title, "image_url": image, "size": size}
+            for pid, title, image, size, key, stores in rows
+            if (members is None or key in members) and query <= (terms(title) | aliases | terms(" ".join(
+                name + " " + STORE_NAMES.get(name, "") for name in stores
+            )))
+        ]
 
-        vectors = {row[0]: row[3] for row in rows}
-        reference = vectors.get(product_id)
+    @app.get("/products/{product_id}/similar")
+    def similar_products(
+        product_id: int, minimum: float | None = Query(None, ge=-1, le=1)
+    ):
+        cutoff = threshold() if minimum is None else minimum
+        with connect_db(password) as conn:
+            items = catalog(conn)
+        if product_id not in items:
+            raise HTTPException(404, "A current rug embedding is unavailable")
+        return [
+            {
+                "id": rug.id,
+                "title": rug.title,
+                "image_url": rug.image,
+                "similarity": score,
+            }
+            for rug, score in ranked(items, items[product_id], "image")
+            if score > cutoff
+        ]
 
-        if reference is None:
-            raise HTTPException(status_code=404, detail="Image embedding not available")
+    @app.get("/shop/api/products/{product_id}/alternatives")
+    def shop_alternatives(product_id: int, step: int = Query(0, ge=0, le=3)):
+        initial = threshold()
+        levels = [initial, *(level for level in (0.88, 0.86, 0.84) if level < initial)]
+        # Every cutoff selects a prefix of this one stable, deduplicated ranking.
+        products = similar_products(product_id, minimum=levels[-1])
+        counts = []
+        for cutoff in levels:
+            count = sum(product["similarity"] > cutoff for product in products)
+            if not counts or count != counts[-1]:
+                counts.append(count)
+        if step >= len(counts):
+            raise HTTPException(422, "No wider result set")
+        count = counts[step]
+        additional = counts[step + 1] - count if step + 1 < len(counts) else 0
+        return {
+            "broadened": step > 0,
+            "can_widen": additional > 0,
+            "next_additions": additional,
+            "products": products[:count],
+        }
 
-        reference_norm = sqrt(sum(x * x for x in reference))
-        results = []
-
-        for other_id, title, image_url, vector in rows:
-            if other_id == product_id:
-                continue
-
-            vector_norm = sqrt(sum(x * x for x in vector))
-            if not reference_norm or not vector_norm:
-                continue
-
-            dot_product = sum(x * y for x, y in zip(reference, vector))
-            score = dot_product / (reference_norm * vector_norm)
-
-            results.append({
-                "id": other_id,
-                "title": title,
-                "image_url": image_url,
-                "similarity": round(score, 4),
-            })
-
-        results.sort(key=lambda item: item["similarity"], reverse=True)
-        return results[:3]
     @app.get("/products/{product_id}/offers")
     def product_offers(product_id: int):
-        with psycopg.connect(
-            host="localhost", port=5432, dbname="buywise",
-            user="postgres", password=password,
-        ) as conn:
+        with connect_db(password) as conn:
             exists = conn.execute(
                 "SELECT id FROM products WHERE id = %s",
                 (product_id,),
@@ -211,23 +203,31 @@ def create_app(password, serpapi_key=""):
             }
             for offer_id, store, seller, currency, url, price, observed_at in rows
         ]
+
     @app.post("/discover")
-    def discover(background_tasks: BackgroundTasks, q: str, category: str):
+    def discover(req: Request, background_tasks: BackgroundTasks, q: str, category: str):
         try:
-            rows = discover_products(q, category, password, api_key=serpapi_key)
+            options = {}
+            if claim_online is not None:
+                options["before_search"] = lambda: claim_online(req.state.visitor)
+            rows = discover_products(q, category, password, api_key=serpapi_key, **options)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 
-        if rows:
+        can_index = (
+            find_spec("torch") is not None and find_spec("transformers") is not None
+        )
+        if rows and can_index:
             product_ids = [row[0] for row in rows]
             background_tasks.add_task(index_missing_images, password, product_ids)
 
-        return {"count": len(rows)}
+        return {"count": len(rows), "index_scheduled": bool(rows and can_index),
+                "product_ids": [row[0] for row in rows]}
 
     return app
 
 
 if __name__ == "__main__":
-    password = getpass("PostgreSQL password: ")
-    serpapi_key = getpass("SerpApi key (optional): ").strip()
-    uvicorn.run(create_app(password, serpapi_key), host="127.0.0.1", port=8001)
+    from buywise_plus import main
+
+    main()
