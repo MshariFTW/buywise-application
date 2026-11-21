@@ -8,6 +8,7 @@ services:
     startCommand: python buywise_plus.py
     healthCheckPath: /healthz
     envVars:
+      - fromGroup: SERPAPI_KEY
       - key: DATABASE_URL
         sync: false
       - key: BUYWISE_SERP_DAILY
