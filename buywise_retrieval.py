@@ -10,6 +10,7 @@ from nltk.stem import PorterStemmer
 
 MODEL = "openai/clip-vit-base-patch32"
 REVISION = "3d74acf9a28c67741b2f4f2ea7635f0aaf6f0268"
+ONLINE_REVISION = "6b7c523703ae26e39be4b03774966f8571c7f523"
 stemmer = PorterStemmer()
 
 
@@ -47,16 +48,16 @@ class Rug:
     vector: tuple
 
 
-def catalog(conn):
+def catalog(conn, *, online=False):
     rows = conn.execute(
         """
         SELECT p.id, p.model_key, COALESCE(NULLIF(p.design_key,''),p.image_url),
                p.title,p.image_url,e.embedding
         FROM products p JOIN product_image_embeddings e ON e.product_id=p.id
-        WHERE p.category='rugs' AND e.model_name=%s AND e.model_revision=%s AND e.source_url=p.image_url
+        WHERE p.category='rugs' AND e.model_name=%s AND e.model_revision=ANY(%s) AND e.source_url=p.image_url
         ORDER BY p.model_key
     """,
-        (MODEL, REVISION),
+        (MODEL, [REVISION, ONLINE_REVISION] if online else [REVISION]),
     ).fetchall()
     result = {}
     for product_id, key, design, title, image, vector in rows:

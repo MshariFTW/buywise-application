@@ -416,6 +416,39 @@ class DatabaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             discover_products("rug", "mice", self.password, "")
 
+    def test_online_rug_is_indexed_on_first_comparison(self):
+        from buywise_retrieval import ONLINE_REVISION
+
+        with connect_db(self.password) as conn:
+            pid = conn.execute("""
+                INSERT INTO products(model_key, title, category, image_url)
+                VALUES ('google:comparison-test', 'Test rug', 'rugs',
+                        'https://gstatic.com/test.jpg') RETURNING id
+            """).fetchone()[0]
+        path = f"/shop/api/products/{pid}/alternatives"
+        try:
+            # Use an opposite embedding so the default range is empty.
+            vector = [-x for x in self.ref.vector]
+            with patch("buywise_online_image.download_image", return_value=(object(), "fixture")), \
+                 patch("buywise_online_image.image_embedding", return_value=vector) as encode:
+                first = self.client.get(path).json()
+                wider = self.client.get(path, params={"step": 1}).json()
+                self.assertEqual(first["products"], [])
+                self.assertTrue(first["can_widen"])
+                self.assertTrue(wider["closest_available"])
+                self.assertEqual(len(wider["products"]), 3)
+                encode.assert_called_once()
+            with connect_db(self.password) as conn:
+                self.assertNotIn(pid, catalog(conn))
+                self.assertEqual(conn.execute(
+                    "SELECT model_revision FROM product_image_embeddings WHERE product_id=%s",
+                    (pid,),
+                ).fetchone()[0], ONLINE_REVISION)
+        finally:
+            with connect_db(self.password) as conn:
+                conn.execute("DELETE FROM product_image_embeddings WHERE product_id=%s", (pid,))
+                conn.execute("DELETE FROM products WHERE id=%s", (pid,))
+
     def test_stale_embedding_excluded(self):
         with connect_db(self.password) as conn:
             conn.execute(

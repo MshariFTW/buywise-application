@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from buywise_discover import discover_products
 from buywise_db import connect_db
 from buywise_image_index import approved_image, index_missing_images
+from buywise_online_image import index_selected_rug
 from buywise_retrieval import catalog, ranked, terms, threshold
 
 BASE = Path(__file__).parent
@@ -126,7 +127,14 @@ def create_app(password, serpapi_key="", claim_online=None):
     ):
         cutoff = threshold() if minimum is None else minimum
         with connect_db(password) as conn:
-            items = catalog(conn)
+            items = catalog(conn, online=True)
+        if product_id not in items:
+            try:
+                index_selected_rug(password, product_id)
+            except (OSError, ValueError) as error:
+                raise HTTPException(503, "Could not process this rug photo") from error
+            with connect_db(password) as conn:
+                items = catalog(conn, online=True)
         if product_id not in items:
             raise HTTPException(404, "A current rug embedding is unavailable")
         return [
@@ -145,12 +153,15 @@ def create_app(password, serpapi_key="", claim_online=None):
         initial = threshold()
         levels = [initial, *(level for level in (0.88, 0.86, 0.84) if level < initial)]
         # Every cutoff selects a prefix of this one stable, deduplicated ranking.
-        products = similar_products(product_id, minimum=levels[-1])
+        products = similar_products(product_id, minimum=-1)
         counts = []
         for cutoff in levels:
             count = sum(product["similarity"] > cutoff for product in products)
             if not counts or count != counts[-1]:
                 counts.append(count)
+        closest_only = counts == [0] and bool(products)
+        if closest_only:
+            counts.append(min(3, len(products)))
         if step >= len(counts):
             raise HTTPException(422, "No wider result set")
         count = counts[step]
@@ -158,6 +169,7 @@ def create_app(password, serpapi_key="", claim_online=None):
         return {
             "broadened": step > 0,
             "can_widen": additional > 0,
+            "closest_available": closest_only and step > 0,
             "next_additions": additional,
             "products": products[:count],
         }

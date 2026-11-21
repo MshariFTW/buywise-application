@@ -508,7 +508,10 @@ el("#detail").addEventListener("click", event => { if (pressedBackdrop && outsid
 async function showSimilar(product, step = 0, trigger = null) {
   const version = trigger ? ++detailVersion : openDetail(tr("Similar rugs", "بدائل مشابهة"), product);
   if (trigger) trigger.disabled = true;
-  else detailPage = {type:"similar", product, step};
+  else {
+    detailPage = {type:"similar", product, step};
+    el("#detail-status").textContent = tr("Comparing rug photos…", "جاري مقارنة صور السجاد…");
+  }
   try {
     const data = await api("/shop/api/products/" + product.id + "/alternatives?step=" + step);
     if (version !== detailVersion) return;
@@ -520,6 +523,7 @@ async function showSimilar(product, step = 0, trigger = null) {
     if (version !== detailVersion) return;
     detailPage = {type:"similar", product, step};
     el("#detail-title").textContent = data.broadened ? tr("Broader matches", "بدائل بنطاق أوسع") : tr("Similar rugs", "بدائل مشابهة");
+    if (data.closest_available) el("#detail-title").textContent = tr("Closest available designs", "أقرب التصاميم المتاحة");
     content.className = "grid";
     if (!keep) content.replaceChildren();
     content.append(...rows.map(row => productCard(row,"similar")));
@@ -546,7 +550,7 @@ async function showSimilar(product, step = 0, trigger = null) {
       return;
     }
     if (version === detailVersion) el("#detail-status").textContent =
-      tr("Image matches are unavailable. A newly added rug may still be indexing.", "البدائل غير متاحة حاليًا. قد تكون صورة السجادة الجديدة قيد الفهرسة.");
+      tr("Could not compare this rug photo. Please try again.", "تعذّرت مقارنة صورة السجادة. حاول مرة أخرى.");
   }
 }
 
