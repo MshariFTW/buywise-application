@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="An interactive BuyWise concept demo: discover visually similar rugs and compare sample prices.">
+<title>BuyWise — Visual Shopping Demo</title>
+<style>
+:root{color-scheme:light;--paper:#fbf8f1;--ink:#2a3026;--muted:#5a6254;--edge:#e1dbcf;--green:#2d543e;--soft:#edf2e9;--white:#fffdf8;--serif:Georgia,"Times New Roman",serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{width:min(1100px,calc(100% - 48px));margin:auto;padding-bottom:36px}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:19px 0;border-bottom:1px solid var(--edge)}
+.brand{font-size:22px;font-weight:750;letter-spacing:-.055em;color:var(--green)}
+.tag{display:inline-flex;border:1px solid #d9e4d5;background:var(--soft);color:#365341;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:600}
+.intro{padding:38px 0 23px;max-width:680px}
+.eyebrow{margin:0 0 7px;text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:700;color:#556951}
+h1,h2,h3,p{margin:0}h1,h2{font-family:var(--serif);font-weight:500}
+h1{font-size:clamp(38px,6vw,63px);line-height:1.05;letter-spacing:-.045em}
+.intro p:last-child{margin:12px 0 0;color:var(--muted);max-width:560px}
+.grid{display:grid;grid-template-columns:minmax(245px,320px) minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:var(--white);border:1px solid var(--edge);border-radius:16px;padding:16px;min-width:0}
+h2{font-size:25px;line-height:1.14;letter-spacing:-.025em}
+h3{font-size:15px;line-height:1.3}
+label{display:block;font-size:12px;font-weight:650;color:var(--muted);margin-bottom:4px}
+select,input,button{font:inherit}
+select,input{display:block;width:100%;min-width:0;border:1px solid #d7d2c4;border-radius:8px;background:#fffdfa;color:var(--ink);padding:8px 9px}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid #75977c;outline-offset:2px}
+button{cursor:pointer;border:1px solid var(--green);border-radius:9px;background:var(--green);color:white;font-weight:650;padding:9px 12px;width:100%}
+button:hover{background:#244533}
+.photo{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;background:#ece5d7;border-radius:10px}
+.reference-select{margin:10px 0}
+.ref-info{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:8px 0 1px}
+.amount{font-weight:720;color:#2e533e;white-space:nowrap}
+.detail{font-size:12px;color:var(--muted)}
+#find{margin-top:11px}
+.results-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:400px;margin:11px 0 12px}
+.filters fieldset{border:0;margin:0;padding:0;min-width:0;display:contents}
+#status{color:var(--muted);font-size:13px;min-height:19px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:6px}
+.card{border:1px solid var(--edge);border-radius:11px;padding:8px;min-width:0}
+.card h3{margin:7px 0 1px;overflow-wrap:anywhere}
+.card .amount{margin-top:4px}
+.empty{min-height:210px;display:grid;place-content:center;text-align:center;gap:6px;padding:15px;border:1px dashed #d7d0bf;border-radius:11px;margin-top:7px;color:var(--muted)}
+.empty strong{color:var(--ink);font-size:16px;font-weight:650}
+.explain{margin-top:15px;padding:12px 0 0;border-top:1px solid var(--edge);font-size:13px;color:var(--muted)}
+.explain strong{color:var(--ink)}
+small{display:block;color:var(--muted);margin-top:6px}
+[hidden]{display:none!important}
+@media(max-width:740px){main{width:calc(100% - 26px)}.intro{padding-top:26px}.grid{grid-template-columns:1fr}.reference .photo{max-height:240px}.panel{padding:13px}}
+@media(max-width:400px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.tag{font-size:11px}}
+</style>
+</head>
+<body>
+<main>
+  <header><div class="brand">BuyWise</div><span class="tag">Concept demo · rugs as an example</span></header>
+  <section class="intro" aria-labelledby="title">
+    <p class="eyebrow">Visual product discovery</p>
+    <h1 id="title">Find a rug with a similar look.</h1>
+    <p>Start with a rug you like, discover similar designs, and compare their prices and sizes.</p>
+  </section>
+  <div class="grid">
+    <section class="panel reference" aria-labelledby="reference-heading">
+      <h2 id="reference-heading">Reference rug</h2>
+      <div class="reference-select">
+        <label for="reference">Choose an example</label>
+        <select id="reference"></select>
+      </div>
+      <img id="reference-photo" class="photo" width="400" height="300" alt="">
+      <div class="ref-info"><h3 id="reference-name"></h3><span id="reference-price" class="amount"></span></div>
+      <p id="reference-size" class="detail"></p>
+      <button type="button" id="find">Find similar rugs</button>
+    </section>
+    <section class="panel" aria-labelledby="results-heading">
+      <div class="results-head">
+        <h2 id="results-heading">Similar alternatives</h2>
+        <span class="tag">Sample catalog</span>
+      </div>
+      <form class="filters" aria-label="Filter alternatives">
+        <fieldset id="filters" disabled>
+          <div>
+            <label for="budget">Max price (SAR)</label>
+            <input id="budget" type="number" min="0" step="1" placeholder="Any price">
+          </div>
+          <div>
+            <label for="size">Size</label>
+            <select id="size">
+              <option value="">Any size</option>
+              <option value="120 × 170">120 × 170 cm</option>
+              <option value="160 × 230">160 × 230 cm</option>
+              <option value="200 × 300">200 × 300 cm</option>
+            </select>
+          </div>
+        </fieldset>
+      </form>
+      <p id="status" role="status"></p>
+      <div id="empty" class="empty"><strong>Start with a rug you like.</strong><span>Click “Find similar rugs” to see the example results.</span></div>
+      <div class="cards" id="cards" hidden></div>
+    </section>
+  </div>
+  <footer class="explain">
+    <strong>Planned retrieval:</strong> Catalog image → image embedding → visually similar products.
+    <small>This prototype uses illustrations, sample prices, and a simulated ranking. It does not run an embedding model or fetch live prices.</small>
+  </footer>
+</main>
+<script>
+const rugs = [
+  {id:"desert",name:"Desert Medallion",price:549,size:"160 × 230",design:"medallion",colors:["#e6cda4","#9c503b","#34574f","#f7e7c9"]},
+  {id:"sand",name:"Sand Medallion",price:329,size:"160 × 230",design:"medallion",colors:["#e6d4b5","#a36c4a","#596b4e","#fbefd6"]},
+  {id:"olive",name:"Olive Heritage",price:399,size:"160 × 230",design:"medallion",colors:["#d0caab","#516449","#975b47","#f3e6c4"]},
+  {id:"rust",name:"Rust Medallion",price:249,size:"120 × 170",design:"medallion",colors:["#d6b18b","#b86245","#62483d","#fae1bf"]},
+  {id:"lattice",name:"Charcoal Lattice",price:479,size:"200 × 300",design:"lattice",colors:["#ded5c2","#45423a","#7c6e5e","#f4ebd9"]},
+  {id:"oat",name:"Oat Lattice",price:299,size:"160 × 230",design:"lattice",colors:["#e9d8b7","#96795d","#6a6b59","#f9eed8"]},
+  {id:"sage",name:"Sage Stripes",price:379,size:"160 × 230",design:"stripes",colors:["#e1dcc1","#617760","#a99672","#f7f0d4"]},
+  {id:"linen",name:"Linen Stripes",price:219,size:"120 × 170",design:"stripes",colors:["#ebe0cc","#a39076","#756955","#fcf4de"]},
+  {id:"blue",name:"Indigo Stripes",price:349,size:"160 × 230",design:"stripes",colors:["#d3d6c9","#436174","#879393","#f0edde"]}
+];
+const rankings = {
+  desert:["sand","olive","rust","oat"],
+  lattice:["oat","desert","sand","linen"],
+  sage:["linen","blue","oat","olive"]
+};
+const byId = Object.fromEntries(rugs.map(rug => [rug.id,rug]));
+const el = id => document.getElementById(id);
+const picker = el("reference"), budget = el("budget"), size = el("size");
+const filters = el("filters"), cards = el("cards"), status = el("status"), empty = el("empty");
+let hasSearch = false;
+
+function imageFor(rug) {
+  const [base, accent, dark, light] = rug.colors;
+  const diamonds = (x,y,r,fill,stroke) =>
+    '<path d="M '+x+' '+(y-r)+' L '+(x+r)+' '+y+' '+x+' '+(y+r)+' '+(x-r)+' '+y+' Z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5"/>';
+  let motif = "";
+  if (rug.design === "medallion") {
+    for (const [x,y] of [[112,90],[288,90],[112,210],[288,210]]) {
+      motif += diamonds(x,y,23,accent,dark) + diamonds(x,y,11,light,dark);
+    }
+    motif += diamonds(200,150,71,accent,dark) + diamonds(200,150,55,base,light) +
+      diamonds(200,150,38,dark,accent) + diamonds(200,150,18,light,accent);
+    for (let x=108;x<=292;x+=23) {
+      motif += diamonds(x,60,6,light,accent) + diamonds(x,240,6,light,accent);
+    }
+  } else if (rug.design === "lattice") {
+    for (let y=83;y<=223;y+=34) for (let x=112;x<=290;x+=35) {
+      const off = y % 2 ? 0 : 10;
+      motif += diamonds(x+off,y,17,"none",accent);
+      motif += diamonds(x+off,y,4,dark,accent);
+    }
+  } else {
+    for (let y=63;y<238;y+=22) {
+      motif += '<path d="M91 '+y+'H309" stroke="'+accent+'" stroke-width="8"/><path d="M91 '+(y+6)+'H309" stroke="'+dark+'" stroke-width="2"/>';
+    }
+  }
+  let fringe = "";
+  for (let y=36;y<=264;y+=7) {
+    fringe += '<path d="M70 '+y+'H57 M330 '+y+'H343" stroke="'+dark+'" opacity=".55" stroke-width="1.8"/>';
+  }
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">'+
+    '<defs><pattern id="weave" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 1H4 M1 0V4" stroke="#3b3125" opacity=".11" stroke-width=".45"/></pattern></defs>'+
+    '<rect width="400" height="300" fill="#eee7d9"/><rect x="73" y="33" width="260" height="240" rx="7" fill="#8a7559" opacity=".22"/>'+
+    fringe+'<rect x="70" y="29" width="260" height="241" rx="4" fill="'+dark+'"/>'+
+    '<rect x="76" y="35" width="248" height="229" fill="'+accent+'"/><rect x="84" y="43" width="232" height="213" fill="'+base+'" stroke="'+light+'" stroke-width="3"/>'+
+    motif+'<rect x="70" y="29" width="260" height="241" rx="4" fill="url(#weave)"/></svg>';
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+}
+
+function node(tag, text, className) {
+  const item = document.createElement(tag);
+  if (text !== undefined) item.textContent = text;
+  if (className) item.className = className;
+  return item;
+}
+
+function showReference() {
+  const rug = byId[picker.value];
+  el("reference-photo").src = imageFor(rug);
+  el("reference-photo").alt = rug.name + " rug illustration";
+  el("reference-name").textContent = rug.name;
+  el("reference-price").textContent = "SAR " + rug.price;
+  el("reference-size").textContent = rug.size + " cm";
+  hasSearch = false;
+  budget.value = "";
+  size.value = "";
+  filters.disabled = true;
+  cards.replaceChildren();
+  cards.hidden = true;
+  status.textContent = "";
+  empty.replaceChildren(node("strong","Start with a rug you like."),
+    node("span","Click “Find similar rugs” to see the example results."));
+  empty.hidden = false;
+}
+
+function renderResults() {
+  if (!hasSearch) return;
+  const max = budget.value === "" ? Infinity : Number(budget.value);
+  const results = rankings[picker.value].map(id => byId[id])
+    .filter(rug => rug.price <= max && (!size.value || rug.size === size.value));
+  cards.replaceChildren();
+  cards.hidden = !results.length;
+  empty.hidden = !!results.length;
+  status.textContent = results.length + " " + (results.length === 1 ? "alternative" : "alternatives") + " · ranked by example similarity";
+  if (!results.length) {
+    empty.replaceChildren(node("strong","No options match those filters."),
+      node("span","Try a higher price limit or a different size."));
+    return;
+  }
+  for (const rug of results) {
+    const card = node("article",undefined,"card");
+    const image = node("img",undefined,"photo");
+    image.src = imageFor(rug);
+    image.alt = rug.name + " rug illustration";
+    image.width = 400;
+    image.height = 300;
+    card.append(image,node("h3",rug.name),node("p",rug.size+" cm","detail"),
+      node("p","SAR "+rug.price,"amount"));
+    cards.append(card);
+  }
+}
+
+for (const id of Object.keys(rankings)) {
+  const option = node("option",byId[id].name);
+  option.value = id;
+  picker.append(option);
+}
+picker.addEventListener("change",showReference);
+el("find").addEventListener("click",() => {
+  hasSearch = true;
+  filters.disabled = false;
+  renderResults();
+});
+budget.addEventListener("input",renderResults);
+size.addEventListener("change",renderResults);
+document.querySelector(".filters").addEventListener("submit",event => event.preventDefault());
+showReference();
+</script>
+</body>
+</html>

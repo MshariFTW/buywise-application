@@ -193,6 +193,10 @@ def build_app(password, api_key, *, public_origin=""):
     def shop():
         return Path(__file__).with_name("buywise_ui.html").read_text(encoding="utf-8")
 
+    @app.get("/BuyWise_Demo.html", response_class=HTMLResponse, include_in_schema=False)
+    def interface_demo():
+        return Path(__file__).with_name("BuyWise_Demo.html").read_text(encoding="utf-8")
+
     @app.get("/shop/api/product-info")
     def product_info(request: Request, ids: list[int] = Query()):
         if len(ids) > 200 or any(item < 1 for item in ids):
